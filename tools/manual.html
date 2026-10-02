@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Manual de uso · Registro Ekotek</title>
+<style>
+  @page { size: A4; margin: 16mm 16mm 18mm; }
+  :root { --ink: #1c1c1e; --muted: #6b6b70; --line: #e3e3e8; --blue: #007aff; --green: #0b8f6a; --soft: #f2f2f7; }
+  * { box-sizing: border-box; }
+  body { font-family: 'SF Pro Text', 'Inter', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; color: var(--ink); font-size: 10.4pt; line-height: 1.5; margin: 0; letter-spacing: -0.1px; }
+  h1, h2, h3 { line-height: 1.2; letter-spacing: -0.4px; }
+  h2 { font-size: 19pt; margin: 0 0 4mm; padding-top: 1mm; break-after: avoid; }
+  h2 .n { color: var(--green); margin-right: 6px; }
+  h3 { font-size: 12.5pt; margin: 6mm 0 2mm; break-after: avoid; }
+  p { margin: 0 0 2.6mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+  li { margin-bottom: 1.2mm; }
+  section { break-before: page; }
+  section.cont { break-before: auto; margin-top: 8mm; }
+  .clear { clear: both; }
+  figure { width: 54mm; margin: 0; text-align: center; break-inside: avoid; }
+  .split { display: grid; grid-template-columns: 1fr 54mm; gap: 7mm; align-items: start; margin-bottom: 3mm; }
+  .split.left { grid-template-columns: 54mm 1fr; }
+  .split .txt > :first-child { margin-top: 0; }
+  figure img { width: 100%; border-radius: 7mm; border: 1.6mm solid #111; box-shadow: 0 2mm 6mm rgba(0,0,0,.12); display: block; }
+  figcaption { font-size: 8.5pt; color: var(--muted); margin-top: 2mm; line-height: 1.3; }
+  .pair { display: flex; gap: 6mm; justify-content: center; margin: 4mm 0; break-inside: avoid; }
+  .pair figure { float: none; margin: 0; }
+  .tip, .warn, .note { border-radius: 3mm; padding: 3mm 4mm; margin: 3mm 0 4mm; break-inside: avoid; }
+  .tip { background: #e8f8f0; border-left: 1.2mm solid #34c759; }
+  .warn { background: #fff4e5; border-left: 1.2mm solid #ff9500; }
+  .note { background: #eaf2ff; border-left: 1.2mm solid var(--blue); }
+  .tip b:first-child, .warn b:first-child, .note b:first-child { display: block; margin-bottom: 1mm; }
+  table { border-collapse: collapse; width: 100%; margin: 2mm 0 4mm; font-size: 9.6pt; break-inside: avoid; }
+  th, td { text-align: left; padding: 1.8mm 2.4mm; border-bottom: 0.3mm solid var(--line); vertical-align: top; }
+  th { background: var(--soft); font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .k { display: inline-block; padding: 0 2mm; border-radius: 1.5mm; background: var(--soft); border: 0.3mm solid var(--line); font-weight: 600; font-size: 9.3pt; white-space: nowrap; }
+  .steps { counter-reset: s; list-style: none; padding-left: 0; }
+  .steps > li { counter-increment: s; position: relative; padding-left: 9mm; margin-bottom: 2.4mm; }
+  .steps > li::before { content: counter(s); position: absolute; left: 0; top: 0.2mm; width: 6mm; height: 6mm; border-radius: 50%; background: var(--green); color: #fff; font-weight: 700; font-size: 8.5pt; display: grid; place-items: center; }
+  pre { background: var(--soft); border-radius: 3mm; padding: 3mm 4mm; font-family: inherit; font-size: 8.8pt; line-height: 1.35; white-space: pre-wrap; margin: 2mm 0 4mm; break-inside: avoid; }
+  .cover { height: 255mm; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 0 8mm; break-after: page; }
+  .cover img { width: 30mm; border-radius: 7mm; box-shadow: 0 3mm 8mm rgba(0,0,0,.18); }
+  .cover h1 { font-size: 36pt; margin: 9mm 0 2mm; letter-spacing: -1px; }
+  .cover .sub { font-size: 15pt; color: var(--muted); margin-bottom: 14mm; }
+  .cover .meta { font-size: 10pt; color: var(--muted); border-top: 0.3mm solid var(--line); padding-top: 4mm; width: 100%; }
+  .toc { columns: 2; column-gap: 10mm; padding-left: 5mm; }
+  .toc li { break-inside: avoid; }
+  .formula { font-variant-numeric: tabular-nums; background: var(--soft); border-radius: 2mm; padding: 2mm 3mm; display: block; margin: 1.5mm 0 3mm; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <img src="../icons/icon-512.png" alt="">
+  <h1>Registro Ekotek</h1>
+  <div class="sub">Manual de uso de la web app del asesor de turno</div>
+  <p style="max-width:140mm">Ventas con vale, inventario de los dos almacenes, comisiones de gestores y asesores, dinero en caja e incidencias, y el <b>cierre general</b> listo para enviar por WhatsApp. Funciona sin internet y guarda todo en el iPhone.</p>
+  <div class="meta">Versión 1.0 · Dirección de la app: <b>https://marcoh03.github.io/registro_ekotek/</b></div>
+</div>
+
+<section style="break-before:auto">
+  <h2>Contenido</h2>
+  <ol class="toc">
+    <li>Instalar la app en el iPhone</li>
+    <li>Primer uso: preparar los datos</li>
+    <li>La pantalla Hoy</li>
+    <li>La rutina de cada turno</li>
+    <li>Registrar una venta</li>
+    <li>Cómo se reparte el dinero de una venta</li>
+    <li>Ver, editar, anular y entregar ventas</li>
+    <li>Inventario</li>
+    <li>Conteo de inventario</li>
+    <li>¿Dónde buscar? (almacén más conveniente)</li>
+    <li>Entradas, traslados, salidas y ajustes</li>
+    <li>Importar el stock desde un cierre</li>
+    <li>Dinero en caja</li>
+    <li>Incidencias</li>
+    <li>Gestores y sus pagos</li>
+    <li>Liquidación semanal (domingo y lunes)</li>
+    <li>El cierre general</li>
+    <li>Ajustes</li>
+    <li>Copias de seguridad</li>
+    <li>Preguntas frecuentes</li>
+  </ol>
+  <div class="note"><b>Idea general</b>Cada cosa que pasa en el turno se anota una sola vez en la app (una venta, un traslado, un conteo, un pago…). A partir de esas anotaciones la app calcula sola el stock de cada almacén, el dinero de cada caja, lo que se le debe a cada gestor y el texto del cierre general.</div>
+</section>
+
+<section>
+  <h2><span class="n">1</span>Instalar la app en el iPhone</h2>
+  <div class="split"><div class="txt">
+  <p>La app es una página web que se instala en la pantalla de inicio y desde ese momento funciona como una aplicación más, también <b>sin conexión</b>. La primera vez sí hace falta internet para descargarla.</p>
+  <ol class="steps">
+    <li>Abre <b>Safari</b> (tiene que ser Safari, no Chrome ni WhatsApp) y entra en <b>marcoh03.github.io/registro_ekotek</b>.</li>
+    <li>Espera unos segundos a que cargue del todo; en ese momento se guarda en el teléfono para usarla sin internet.</li>
+    <li>Toca el botón <span class="k">Compartir</span> (el cuadrado con la flecha hacia arriba) en la barra de Safari.</li>
+    <li>Desliza y elige <span class="k">Añadir a pantalla de inicio</span>. Deja el nombre “Ekotek” y toca <span class="k">Añadir</span>.</li>
+    <li>Abre la app <b>siempre desde el icono verde</b> de la pantalla de inicio. Se abre a pantalla completa, sin la barra de Safari.</li>
+  </ol>
+  <div class="warn"><b>Importante</b>Los datos que se guardan dentro de la app instalada son distintos de los de Safari. Usa siempre el icono de la pantalla de inicio para que todo quede en el mismo sitio.</div>
+  <h3>Actualizaciones</h3>
+  <p>Cuando se publique una versión nueva, al abrir la app con internet aparecerá una barra azul: <i>“Hay una nueva versión. Toca para actualizar.”</i> Al tocarla se recarga con la versión nueva. Tus datos no se pierden al actualizar.</p>
+  </div><figure><img src="../preview/00-bienvenida.png"><figcaption>Pantalla de bienvenida la primera vez que se abre.</figcaption></figure></div>
+</section>
+
+<section>
+  <h2><span class="n">2</span>Primer uso: preparar los datos</h2>
+  <div class="split"><div class="txt">
+  <p>En la pantalla de bienvenida escribe tu nombre (aparece en el cierre como “Asesor Comercial”). Después lo más rápido es tocar <span class="k">Empezar importando el último cierre</span>:</p>
+  <ol class="steps">
+    <li>En WhatsApp, mantén pulsado el último cierre general que se envió y elige <b>Copiar</b>.</li>
+    <li>En la app, toca <span class="k">Pegar desde el portapapeles</span> (o mantén pulsado el cuadro y elige Pegar).</li>
+    <li>Toca <span class="k">Analizar</span>. La app busca la sección <b>📦 EN STOCK</b> y lee cada línea de cada almacén (CERRO y LA LISA).</li>
+    <li>Revisa la lista: “Existe” significa que el producto ya estaba en el catálogo; “Producto nuevo” se creará. Las líneas con “(Incidencia)” se marcan.</li>
+    <li>Toca <span class="k">Aplicar</span>. El stock de cada almacén queda exactamente igual que en el texto.</li>
+  </ol>
+  </div><figure><img src="../preview/13-importar.png"><figcaption>Pegar el último cierre general para cargar el inventario.</figcaption></figure></div>
+  <div class="split left"><figure><img src="../preview/14-importar-revision.png"><figcaption>Revisión antes de aplicar.</figcaption></figure><div class="txt">
+  <h3>Después de importar</h3>
+  <ul>
+    <li><b>Productos repetidos.</b> En los cierres a veces el mismo producto se escribe distinto (“Bluebety” y “Bluetty”, “Dji 1000 V2” y “DJI Power 1000 V2”). Abre uno de ellos en Inventario y usa <span class="k">Fusionar con otro producto</span>: se unen el stock y el historial, y el nombre viejo se recuerda para futuras importaciones.</li>
+    <li><b>Precios.</b> En <i>Ajustes → Catálogo de productos</i> toca cada producto y escribe el <b>precio de la empresa</b> (sin comisión). También se puede poner al registrar la primera venta de ese producto: si el precio estaba vacío, se guarda solo.</li>
+    <li><b>Gestores.</b> No hace falta darlos de alta antes: se crean al registrar una venta (botón “Nuevo gestor”) o desde la pestaña Gestores con <span class="k">+</span>.</li>
+    <li><b>Dinero inicial en caja.</b> Abre cada caja desde Hoy y usa <span class="k">Arqueo</span> para escribir lo que hay contado. Ver el capítulo 13.</li>
+  </ul>
+  </div></div>
+</section>
+
+<section>
+  <h2><span class="n">3</span>La pantalla Hoy</h2>
+  <div class="pair">
+    <figure><img src="../preview/01-hoy.png"><figcaption>Parte superior.</figcaption></figure>
+    <figure><img src="../preview/02-hoy-abajo.png"><figcaption>Parte inferior.</figcaption></figure>
+  </div>
+  <p>Es el centro del turno. En la parte de abajo hay cinco pestañas: <b>Hoy, Ventas, Inventario, Gestores y Cierre</b>. Arriba a la derecha está la rueda de <b>Ajustes</b>.</p>
+  <ul>
+    <li><b>Fecha de trabajo</b> (botón azul con el calendario): todo lo que registres usa esta fecha. Si el turno pasa de medianoche puedes seguir con la fecha del día anterior; la app muestra un aviso con el botón “Volver a hoy”.</li>
+    <li><b>Accesos rápidos</b>: Nueva venta, ¿Dónde buscar?, Conteo, Incidencia, Traslado y Cierre.</li>
+    <li><b>Resumen del día</b>: número de ventas, total cobrado, comisiones de gestores y lo que corresponde a los dueños.</li>
+    <li><b>Revisión de inventario</b>: indica si ya contaste cada almacén hoy (✓ con la hora) o si está pendiente.</li>
+    <li><b>Dinero en caja</b> de cada almacén. Tócalo para ver movimientos o registrar entregas, gastos y arqueos.</li>
+    <li><b>Ventas del día</b>, y en <b>Seguimiento</b>: incidencias abiertas, compras anticipadas pendientes y la liquidación semanal.</li>
+  </ul>
+  <p>Los domingos aparece un aviso morado para preparar la liquidación semanal, y si hace más de 7 días que no exportas una copia de seguridad aparece un aviso naranja.</p>
+</section>
+
+<section>
+  <h2><span class="n">4</span>La rutina de cada turno</h2>
+  <ol class="steps">
+    <li><b>Al empezar: conteo de inventario.</b> Toca <span class="k">Conteo</span>, elige el almacén y escribe lo que cuentas. Si algo no coincide con el último cierre, la app ajusta el stock y crea la incidencia (“En el Cerro había 5 Ecoflow Delta 3 y ahora hay 4 (falta 1)”). Repite con el otro almacén.</li>
+    <li><b>Arqueo de caja</b> (recomendado): abre cada caja y comprueba que el dinero coincide.</li>
+    <li><b>Cuando entra un pedido:</b> usa <span class="k">¿Dónde buscar?</span> para ver en qué almacén hay el producto y cuál queda más cerca del cliente. Desde ahí mismo puedes registrar la venta.</li>
+    <li><b>Cada venta:</b> <span class="k">Nueva venta</span> con su número de vale, productos, lo cobrado y la comisión de cada gestor.</li>
+    <li><b>Durante el día:</b> registra traslados entre almacenes, mercancía que llega, entregas de dinero a los dueños e incidencias en cuanto ocurran.</li>
+    <li><b>Al terminar:</b> pestaña <span class="k">Cierre</span> → revisa la lista de comprobación, lee el texto, corrige lo que haga falta, <span class="k">Guardar</span> y <span class="k">Enviar por WhatsApp</span>.</li>
+    <li><b>Los domingos:</b> Gestores → <span class="k">Liquidación semanal</span> para saber cuánto entregar el lunes a cada gestor y a cada asesor.</li>
+  </ol>
+  <div class="tip"><b>Consejo</b>Anota cada venta en el momento. Así el stock que ves es siempre el real y el cierre sale solo, sin tener que repasar papeles al final.</div>
+</section>
+
+<section>
+  <h2><span class="n">5</span>Registrar una venta</h2>
+  <div class="split"><div class="txt">
+  <p>Toca <span class="k">Nueva venta</span> (en Hoy o el <span class="k">+</span> de Ventas). Campos:</p>
+  <ul>
+    <li><b>Fecha</b>: la fecha de trabajo (se puede cambiar).</li>
+    <li><b>Nº de vale</b>: el número del vale. Si lo dejas vacío la app pregunta antes de guardar; si el número ya existe también avisa.</li>
+    <li><b>Tipo de venta</b>:
+      <ul>
+        <li><b>Recogida</b>: el cliente recoge en el punto de venta. Descuenta el stock ese día.</li>
+        <li><b>Mensajería</b>: se envía al cliente. Descuenta el stock ese día y en el cierre aparece como “🚚 Mensajerías”. Permite anotar la dirección.</li>
+        <li><b>Anticipada</b>: el cliente paga ahora y recoge más adelante. El dinero cuenta hoy, pero el stock <b>no</b> se descuenta hasta que se marque como entregada. Exige el nombre del cliente.</li>
+      </ul></li>
+    <li><b>Almacén</b>: de dónde sale el producto (Cerro → punto de venta KHOLY; La Lisa → LISA). Si ya elegiste el municipio del cliente, la app te avisa si el almacén más cercano es otro.</li>
+    <li><b>Productos</b>: <span class="k">Añadir producto</span> abre el buscador con el stock de cada almacén. Con <span class="k">−</span> <span class="k">+</span> cambias la cantidad, y “Precio u.” es el precio de la empresa por unidad. Debajo verás cuántos hay disponibles en ese almacén (en verde si alcanza, en rojo si no).</li>
+  </ul>
+  </div><figure><img src="../preview/04-nueva-venta.png"><figcaption>Formulario de nueva venta.</figcaption></figure></div>
+  <div class="split left"><figure><img src="../preview/03-elegir-producto.png"><figcaption>Buscador de productos con el stock de cada almacén.</figcaption></figure><div class="txt">
+  <ul>
+    <li><b>Cobrado al cliente</b>: lo que pagó realmente el cliente. Si lo dejas vacío se usa el precio de la empresa.</li>
+    <li><b>Método</b>: Efectivo, Transferencia o Mixto (en Mixto escribes cuánto fue en efectivo). Solo el efectivo entra en la caja. Puedes elegir en qué caja entra.</li>
+    <li><b>Comisión de gestores</b>: <span class="k">Añadir gestor</span>, elige o crea el gestor y escribe su comisión. Al añadir el primero, la app propone todo el sobreprecio; cámbialo si al gestor le toca menos. Se pueden poner varios gestores en la misma venta.</li>
+    <li><b>Cliente</b>: nombre, teléfono, municipio (ayuda a elegir almacén) y dirección en mensajería.</li>
+    <li><b>Otros</b>: el asesor (por defecto tú) y notas libres.</li>
+  </ul>
+  <p>Toca <span class="k">Guardar</span>. Si no hay stock suficiente en el almacén elegido, la app avisa y te deja registrarla igualmente (quedará stock negativo, que se marca en la revisión del cierre para que lo corrijas).</p>
+  </div></div>
+</section>
+
+<section>
+  <h2><span class="n">6</span>Cómo se reparte el dinero de una venta</h2>
+  <div class="split"><div class="txt">
+  <p>Mientras escribes, el bloque <b>Reparto del dinero</b> se actualiza solo:</p>
+  <table>
+    <tr><th>Concepto</th><th>Cómo se calcula</th></tr>
+    <tr><td>Precio de la empresa</td><td>Cantidad × precio unitario de cada producto</td></tr>
+    <tr><td>Cobrado al cliente</td><td>Lo que pagó el cliente</td></tr>
+    <tr><td>Sobreprecio (extra)</td><td>Cobrado − precio de la empresa</td></tr>
+    <tr><td>Comisión de gestores</td><td>Suma de lo anotado para cada gestor</td></tr>
+    <tr><td>Extra para los dueños</td><td>Sobreprecio − comisión de gestores</td></tr>
+    <tr><td><b>Total para los dueños</b></td><td>Cobrado − comisión de gestores</td></tr>
+  </table>
+  <p><b>Ejemplo.</b> Una Oupes Mega 2 cuesta $820. El gestor Ernesto se la vendió al cliente por $860 y a él le tocan $25:</p>
+  <span class="formula">Sobreprecio = 860 − 820 = $40 · Extra dueños = 40 − 25 = $15 · Total dueños = 860 − 25 = $835</span>
+  <p>Los $25 se suman a la cuenta de Ernesto (se le pagan en la liquidación semanal) y aparecen en el cierre en “💳 COMISIONES”. Si un mismo gestor tiene varias ventas en el día, el cierre lo muestra así: <i>“Yoel: 5 + 5 = 10 USD”</i>.</p>
+  <div class="note"><b>¿Y si la comisión la paga la empresa?</b>Si el cliente pagó el precio normal pero al gestor le corresponde comisión, anótala igual. El sobreprecio será 0, el “extra para los dueños” saldrá negativo y el total para los dueños será el precio menos la comisión.</div>
+  </div><figure><img src="../preview/05-nueva-venta-reparto.png"><figcaption>Bloque “Reparto del dinero” del formulario.</figcaption></figure></div>
+</section>
+
+<section>
+  <h2><span class="n">7</span>Ver, editar, anular y entregar ventas</h2>
+  <div class="pair">
+    <figure><img src="../preview/06-ventas.png"><figcaption>Pestaña Ventas.</figcaption></figure>
+    <figure><img src="../preview/07-detalle-venta.png"><figcaption>Detalle de una venta.</figcaption></figure>
+  </div>
+  <p>La pestaña <b>Ventas</b> muestra todas las ventas agrupadas por día con el total de cada día. Busca por número de vale, producto, cliente o gestor, y filtra por Recogidas, Envíos o Anticipadas (las pendientes de entrega aparecen primero). El icono indica el tipo: bolsa azul (recogida), camión (mensajería) y reloj naranja (anticipada).</p>
+  <p>Al tocar una venta se abre su detalle con el reparto y el cliente. Desde ahí:</p>
+  <ul>
+    <li><span class="k">Editar</span>: cambia cualquier dato. El stock, la caja y las comisiones se recalculan solos.</li>
+    <li><span class="k">Marcar como entregada</span> (solo anticipadas): pregunta de qué almacén sale y descuenta el stock con la fecha de trabajo. En el cierre de ese día aparece en Recogidas como “(compra anticipada)”.</li>
+    <li><span class="k">Anular venta</span>: la venta queda tachada y se devuelven stock, dinero y comisiones. Se puede restaurar.</li>
+    <li><span class="k">Eliminar venta</span>: la borra por completo (por ejemplo, si se registró dos veces).</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">8</span>Inventario</h2>
+  <div class="pair">
+    <figure><img src="../preview/08-inventario.png"><figcaption>Stock de un almacén.</figcaption></figure>
+    <figure><img src="../preview/09-inventario-ambos.png"><figcaption>Vista “Ambos”: 🏠 Cerro y 🏡 La Lisa.</figcaption></figure>
+  </div>
+  <p>Arriba eliges el almacén o <b>Ambos</b> para comparar. Los productos sin stock se ocultan (botón al final para mostrarlos). La etiqueta naranja <b>Incidencia</b> indica que el producto tiene una incidencia abierta en ese almacén; en el cierre aparecerá como “(Incidencia)”.</p>
+  <p>Los botones de acceso rápido son <b>Conteo, Entrada, Traslado y ¿Dónde buscar?</b>, y el <span class="k">+</span> de arriba ofrece además nuevo producto, salida/baja e importar desde un cierre.</p>
+  <div class="split"><div class="txt">
+  <h3>Ficha de producto</h3>
+  <p>Al tocar un producto ves el total de unidades, el precio, el stock por almacén y el <b>historial de movimientos</b>: ventas, entregas, entradas, traslados, ajustes y conteos, con fecha y nota. Sirve para averiguar de dónde viene una diferencia.</p>
+  <ul>
+    <li>Toca un almacén para <b>ajustar la cantidad</b> a mano (con motivo) o <b>reportar una incidencia</b> de ese producto.</li>
+    <li><span class="k">Editar</span>: nombre, precio y “otros nombres” (los nombres alternativos con que aparece en los cierres).</li>
+    <li><span class="k">Fusionar con otro producto</span>: une dos productos repetidos.</li>
+    <li><span class="k">Eliminar producto</span>: solo si nunca tuvo movimientos; si no, usa Fusionar.</li>
+  </ul>
+  </div><figure><img src="../preview/10-ficha-producto.png"><figcaption>Ficha de producto.</figcaption></figure></div>
+</section>
+
+<section>
+  <h2><span class="n">9</span>Conteo de inventario</h2>
+  <div class="split"><div class="txt">
+  <p>Es la revisión inicial del turno. Toca <span class="k">Conteo</span> y elige el almacén.</p>
+  <ul>
+    <li>Cada producto muestra lo que dice el sistema (“Sistema: 5”). Escribe lo que cuentas o usa <span class="k">−</span> <span class="k">+</span>.</li>
+    <li>Las casillas vacías se consideran correctas, así que solo tienes que tocar lo que no coincide.</li>
+    <li>Las filas con diferencia se ponen en naranja con la diferencia (+1, −2…).</li>
+    <li><b>Mostrar todos los productos</b> incluye los que tienen stock 0 (por si aparece uno que no debería estar).</li>
+    <li><b>Crear incidencias por diferencias</b> (activado) genera el texto de la incidencia automáticamente.</li>
+    <li>Si todo coincide, toca <span class="k">Todo coincide con el sistema</span>.</li>
+  </ul>
+  <p>Al guardar, el stock queda igual a lo contado y el conteo aparece como hecho (✓) en Hoy y en la revisión del cierre.</p>
+  </div><figure><img src="../preview/11-conteo.png"><figcaption>Conteo con una diferencia (+1).</figcaption></figure></div>
+</section>
+
+<section>
+  <h2><span class="n">10</span>¿Dónde buscar?</h2>
+  <div class="split"><div class="txt">
+  <p>Sirve para decidir de qué almacén sacar un pedido.</p>
+  <ol class="steps">
+    <li>Añade los productos del pedido y sus cantidades.</li>
+    <li>Elige el <b>municipio</b> del cliente.</li>
+    <li>La tabla muestra el stock de cada almacén (verde si alcanza, rojo si no) y marca con 📍 el almacén más cercano.</li>
+    <li>La recomendación elige el almacén más cercano que tenga <b>todo</b> el pedido; si no lo tiene, el otro; si ninguno lo tiene completo, te avisa para dividir el pedido.</li>
+    <li><span class="k">Registrar venta con este pedido</span> abre la nueva venta con los productos y el almacén ya puestos.</li>
+  </ol>
+  <p>Qué almacén queda más cerca de cada municipio se configura en <i>Ajustes → Municipios y cercanía</i>. Puedes añadir repartos o pueblos que no estén en la lista.</p>
+  </div><figure><img src="../preview/12-donde-buscar.png"><figcaption>Recomendación según stock y cercanía.</figcaption></figure></div>
+</section>
+
+<section>
+  <h2><span class="n">11</span>Entradas, traslados, salidas y ajustes</h2>
+  <p>Todo cambio de stock que no sea una venta se registra con uno de estos movimientos (Inventario → botones o <span class="k">+</span>):</p>
+  <table>
+    <tr><th>Movimiento</th><th>Cuándo usarlo</th><th>Efecto</th></tr>
+    <tr><td><b>Entrada</b></td><td>Llega mercancía nueva a un almacén.</td><td>Suma al almacén.</td></tr>
+    <tr><td><b>Traslado</b></td><td>Se lleva mercancía de un almacén al otro (por ejemplo, del Cerro a Kholy/La Lisa).</td><td>Resta en el origen y suma en el destino.</td></tr>
+    <tr><td><b>Salida / baja</b></td><td>Sale producto sin venta: rotura, garantía, devolución.</td><td>Resta del almacén.</td></tr>
+    <tr><td><b>Ajuste</b></td><td>Corregir a mano una cantidad (desde la ficha del producto).</td><td>Deja la cantidad exacta que escribas.</td></tr>
+    <tr><td><b>Conteo</b></td><td>Revisión física del almacén.</td><td>Ajusta y crea incidencias por diferencias.</td></tr>
+  </table>
+  <p>Cada movimiento lleva fecha y una nota opcional, y queda en el historial del producto.</p>
+  <div class="warn"><b>Si un traslado no se hizo</b>Si se acordó un traslado pero la mercancía no llegó (“el panel RONMA no se trajo a Kholy desde el Cerro”), no registres el traslado: crea una <b>incidencia</b> con ese texto, almacén y producto. Cuando llegue, registra el traslado y marca la incidencia como resuelta.</div>
+
+  <h2 style="margin-top:9mm"><span class="n">12</span>Importar el stock desde un cierre</h2>
+  <p>Además de al empezar, puedes importar en cualquier momento (<i>Ajustes → Importar stock desde un cierre</i> o Inventario → <span class="k">+</span>). Útil si otro asesor hizo el turno y quieres partir de su cierre.</p>
+  <ul>
+    <li>Se reconocen los formatos habituales: “- 1 Ecoflow River 2 Pro”, “1-Oupes B2”, “- 7-Bluetty”, “-10 Paneles 685 W”.</li>
+    <li>Los títulos de almacén se reconocen por su nombre (CERRO, LA LISA), configurables en <i>Ajustes → Almacenes</i>.</li>
+    <li><b>Poner a 0 lo que no aparece</b>: si un producto no está en el texto de ese almacén, su stock pasa a 0.</li>
+    <li><b>Crear incidencias marcadas</b>: los productos con “(Incidencia)” generan una incidencia abierta.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">13</span>Dinero en caja</h2>
+  <div class="split"><div class="txt">
+  <p>Cada almacén tiene su caja. Se abre desde <b>Hoy → Dinero en caja</b>. El saldo se calcula así:</p>
+  <span class="formula">Caja = efectivo de las ventas + ingresos − entregas a los dueños − gastos − pagos hechos desde la caja ± arqueos</span>
+  <ul>
+    <li>El <b>efectivo de las ventas</b> entra solo (las transferencias no).</li>
+    <li><span class="k">Entrega a dueños</span>: el dinero que se entrega a los jefes.</li>
+    <li><span class="k">Gasto</span>: transporte, materiales…</li>
+    <li><span class="k">Ingreso</span>: dinero que entra sin ser una venta.</li>
+    <li><span class="k">Arqueo</span>: escribe lo que hay contado. Si no coincide, la app registra la diferencia y ofrece crear una incidencia (“faltan $5”). Úsalo también para poner el saldo inicial.</li>
+  </ul>
+  <p>El cierre muestra el dinero en caja de cada almacén al final del día del cierre. Para borrar un movimiento manual, tócalo en la lista.</p>
+  </div><figure><img src="../preview/15-caja.png"><figcaption>Caja de La Lisa con sus movimientos.</figcaption></figure></div>
+</section>
+
+<section>
+  <h2><span class="n">14</span>Incidencias</h2>
+  <div class="split"><div class="txt">
+  <p>Una incidencia es cualquier cosa que los jefes deben saber: faltantes, sobrantes, mercancía que no se trasladó, equipos con problemas, diferencias de caja…</p>
+  <ul>
+    <li>Créala con <span class="k">Incidencia</span> en Hoy, con <span class="k">Nueva</span> en la lista de incidencias o desde la ficha de un producto.</li>
+    <li>Escribe el texto tal como quieres que salga en el cierre. Opcionalmente elige almacén y producto: entonces ese producto aparecerá con “(Incidencia)” en el stock del cierre.</li>
+    <li>Toca una incidencia para <b>marcarla como resuelta</b>, editarla o eliminarla.</li>
+  </ul>
+  <p>En el cierre de un día aparecen las incidencias creadas ese día y las que siguen abiertas de días anteriores (con “desde dd/mm/aa”). Al resolverla deja de aparecer en los cierres siguientes.</p>
+  </div><figure><img src="../preview/16-incidencias.png"><figcaption>Lista de incidencias.</figcaption></figure></div>
+</section>
+
+<section>
+  <h2><span class="n">15</span>Gestores y sus pagos</h2>
+  <div class="pair">
+    <figure><img src="../preview/17-gestores.png"><figcaption>Lista de gestores con lo que se les debe.</figcaption></figure>
+    <figure><img src="../preview/18-gestor.png"><figcaption>Cuenta de un gestor.</figcaption></figure>
+  </div>
+  <p>La pestaña <b>Gestores</b> muestra cada gestor con lo que se le debe (en naranja) o “Al día”. Un gestor puede tener nombre, número o ambos (por ejemplo “55507788 Yanet Gil”).</p>
+  <ul>
+    <li>La cuenta de un gestor muestra <b>Ganado</b> (todas sus comisiones), <b>Pagado</b> y <b>Pendiente</b>, y el historial de cada comisión (con su vale) y cada pago.</li>
+    <li><span class="k">Registrar pago</span>: importe (propone lo pendiente), fecha y si sale de una caja (se descuenta de esa caja).</li>
+    <li><span class="k">Llamar</span> y <span class="k">WhatsApp</span> abren directamente la llamada o el chat (a los números de 8 cifras se les añade el prefijo 53).</li>
+    <li>Para borrar un pago hecho por error, tócalo en el historial.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">16</span>Liquidación semanal</h2>
+  <div class="pair">
+    <figure><img src="../preview/19-liquidacion.png"><figcaption>Gestores a pagar.</figcaption></figure>
+    <figure><img src="../preview/20-liquidacion-asesores.png"><figcaption>Comisión de los asesores.</figcaption></figure>
+  </div>
+  <p>Los domingos se calcula lo que hay que entregar el lunes. Ábrela en <b>Gestores → Liquidación semanal</b> (o desde el aviso del domingo en Hoy). La semana va de <b>lunes a domingo</b>; con las flechas ‹ › cambias de semana. El lunes se abre por defecto la semana que acaba de terminar.</p>
+  <ul>
+    <li><b>Gestores · a entregar</b>: para cada gestor, sus comisiones de la semana y el total pendiente (incluye lo que quedara sin pagar de semanas anteriores). Toca uno para registrar su pago, o <span class="k">Registrar pago de todos</span> el lunes.</li>
+    <li><b>Asesores</b>: cada asesor cobra un porcentaje (0,1 % por defecto) de las ventas de la semana registradas con su nombre. Toca un asesor para marcar su comisión como pagada.</li>
+    <li><span class="k">Compartir</span> o <span class="k">Copiar</span> genera un texto con la liquidación para enviarlo a los jefes.</li>
+  </ul>
+  <div class="note"><b>Ajustar el cálculo</b>En <i>Ajustes → Comisiones</i> cambias el porcentaje de los asesores y si se calcula sobre el <b>total cobrado</b> o sobre el <b>precio de la empresa</b>. Ten en cuenta que la app solo conoce las ventas registradas en este iPhone.</div>
+</section>
+
+<section>
+  <h2><span class="n">17</span>El cierre general</h2>
+  <div class="split"><div class="txt">
+  <p>La pestaña <b>Cierre</b> genera el texto con el mismo formato que se usa en el grupo de WhatsApp.</p>
+  <h3>Revisión antes de enviar</h3>
+  <ul>
+    <li><b>Conteo de inventario</b>: si falta contar algún almacén.</li>
+    <li><b>Ventas registradas</b> y cuántas no tienen número de vale.</li>
+    <li><b>Stock negativo</b>: productos vendidos sin stock en el sistema (revisa si falta una entrada o un traslado).</li>
+    <li><b>Incidencias abiertas</b>.</li>
+  </ul>
+  <h3>Qué incluye el texto</h3>
+  <ol>
+    <li>Encabezado con fecha y asesor.</li>
+    <li>Por cada punto de venta (KHOLY, LISA): <b>Recogidas</b>, <b>Mensajerías</b> y <b>Compras anticipadas</b> del día.</li>
+    <li><b>EN STOCK</b> de cada almacén al final del día, con “(Incidencia)” donde corresponda.</li>
+    <li><b>DINERO EN CAJA</b> de cada almacén.</li>
+    <li><b>COMISIONES</b> de los gestores del día.</li>
+    <li><b>LISTADO DE COMPRAS ANTICIPADAS</b> pendientes de entregar: vale | cliente | equipos.</li>
+    <li><b>INCIDENCIAS</b>.</li>
+  </ol>
+  </div><figure><img src="../preview/21-cierre.png"><figcaption>Revisión antes de enviar.</figcaption></figure></div>
+  <div class="split left"><figure><img src="../preview/22-cierre-texto.png"><figcaption>El texto se puede editar directamente.</figcaption></figure><div class="txt">
+  <h3>Editar y enviar</h3>
+  <ul>
+    <li>Mientras no lo toques, el texto se actualiza solo con cada venta (“Automático”).</li>
+    <li>Puedes <b>escribir directamente</b> en el texto para corregir o añadir algo; pasa a “Editado”.</li>
+    <li><span class="k">Guardar</span> guarda esa versión del día en “Cierres guardados”.</li>
+    <li><span class="k">Regenerar</span> vuelve a crear el texto con los datos actuales (pierdes lo escrito a mano).</li>
+    <li><span class="k">Copiar</span> lo copia; <span class="k">Enviar por WhatsApp</span> abre el menú de compartir de iOS para elegir WhatsApp y el chat de los jefes.</li>
+    <li>Con el botón de la fecha puedes ver o rehacer el cierre de otro día; el stock y la caja se calculan a la fecha elegida.</li>
+  </ul>
+  <p>En <i>Ajustes → Texto del cierre</i> puedes añadir el número de vale y el importe de cada venta a las líneas de ventas.</p>
+  </div></div>
+</section>
+
+<section>
+  <h2><span class="n">18</span>Ajustes</h2>
+  <div class="split"><div class="txt">
+  <ul>
+    <li><b>Asesor de turno</b>: tu nombre. Si otro asesor usa este iPhone, cámbialo al empezar su turno.</li>
+    <li><b>Almacenes</b>: nombre, “título en ventas” (KHOLY, LISA), “título en stock” (CERRO, LA LISA) y emoji de cada almacén, tal como salen en el cierre.</li>
+    <li><b>Catálogo de productos</b>: todos los productos con su precio.</li>
+    <li><b>Municipios y cercanía</b>: almacén más cercano para cada lugar.</li>
+    <li><b>Importar stock desde un cierre</b>.</li>
+    <li><b>Comisiones</b>: porcentaje de asesores, base de cálculo y moneda.</li>
+    <li><b>Texto del cierre</b>: incluir número de vale e importe.</li>
+    <li><b>Copia de seguridad</b>: exportar y restaurar.</li>
+    <li><b>Ayuda</b>: este manual y la versión de la app.</li>
+    <li><b>Borrar todos los datos</b>: pide escribir BORRAR para confirmar.</li>
+  </ul>
+  </div><figure><img src="../preview/24-ajustes.png"><figcaption>Ajustes.</figcaption></figure></div>
+</section>
+
+<section>
+  <h2><span class="n">19</span>Copias de seguridad</h2>
+  <p>Toda la información (ventas, inventario, gestores, caja, cierres) se guarda <b>solo dentro de este iPhone</b>. No se sube a internet ni a GitHub. Por eso es importante hacer copias:</p>
+  <ol class="steps">
+    <li><i>Ajustes → Exportar copia de seguridad</i>.</li>
+    <li>Se abre el menú de compartir con un archivo <b>ekotek-respaldo-AAAA-MM-DD.json</b>. Guárdalo en <b>Archivos</b> (iCloud Drive) o envíatelo por WhatsApp/correo.</li>
+    <li>Para recuperarlo (en otro iPhone o tras reinstalar): <i>Ajustes → Restaurar copia de seguridad</i> y elige el archivo. Reemplaza todos los datos actuales.</li>
+  </ol>
+  <div class="warn"><b>Cuándo se pueden perder los datos</b>Si borras la app de la pantalla de inicio, si borras los datos de Safari o si cambias de teléfono. Haz una copia al menos una vez por semana (la app te lo recuerda) y siempre antes de cambiar de móvil.</div>
+  <p>La copia también sirve para pasar la información a otro asesor: él restaura tu copia en su iPhone y sigue desde ahí.</p>
+
+  <h2 style="margin-top:9mm"><span class="n">20</span>Preguntas frecuentes</h2>
+  <h3>¿Necesito internet?</h3>
+  <p>Solo la primera vez para instalarla y cuando haya actualizaciones. Todo lo demás funciona sin conexión. El manual en PDF sí necesita internet para abrirse desde la app.</p>
+  <h3>Me equivoqué en una venta.</h3>
+  <p>Ventas → toca la venta → <span class="k">Editar</span>. Si no debía existir, <span class="k">Anular</span> o <span class="k">Eliminar</span>. Todo se recalcula.</p>
+  <h3>El stock de la app no coincide con lo que hay.</h3>
+  <p>Mira el historial en la ficha del producto para ver qué movimiento lo cambió. Corrígelo con un conteo o un ajuste; si la diferencia es real, deja la incidencia.</p>
+  <h3>Un producto sale con dos nombres distintos.</h3>
+  <p>Ábrelo en Inventario y usa <span class="k">Fusionar con otro producto</span>.</p>
+  <h3>Un gestor cobró parte de la comisión por adelantado.</h3>
+  <p>Registra un pago en su cuenta con ese importe; la liquidación del domingo restará lo ya pagado.</p>
+  <h3>Hice el cierre y después registré otra venta.</h3>
+  <p>Pestaña Cierre → <span class="k">Regenerar</span> y vuelve a guardar y enviar.</p>
+  <h3>No me sale el botón de compartir para WhatsApp.</h3>
+  <p>Usa <span class="k">Copiar</span> y pega el texto en el chat de WhatsApp.</p>
+</section>
+
+</body>
+</html>
