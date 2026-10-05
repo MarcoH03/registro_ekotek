@@ -19,7 +19,7 @@ async function seed(page) {
     const t = S.today();
     const ws = S.weekStart(t);
     const day = (n) => S.addDays(ws, n);
-    Object.assign(state.settings, { asesor: 'Marco Cañizares', asesores: ['Marco Cañizares', 'Laura Gómez'], onboarded: true, lastBackup: t });
+    Object.assign(state.settings, { asesor: 'Marco Cañizares', asesores: ['Marco Cañizares', 'Laura Gómez'], onboarded: true, lastBackup: t, seenVersion: S.APP_VERSION });
 
     S.applyStockImport(S.parseStockText(stockText), { date: S.addDays(ws, -1), zeroOthers: true, makeIncidents: false });
     const P = (n) => S.findProductByName(n);
@@ -63,6 +63,7 @@ async function seed(page) {
     sale({ date: day(1), vale: '1504', wh: 'lisa', items: [['Paneles Solares Monocristalinos Bifaciales', 4]], extra: 0 });
     sale({ date: day(2), vale: '1510', wh: 'cerro', items: [['DJI Power 1000 V2', 1]], extra: 25, g: [['Dayana', 20]] });
     sale({ date: day(2), vale: '1511', wh: 'lisa', items: [['Oupes Mega 3', 1]], extra: 60, g: [['55503344', 60]], muni: 'La Lisa' });
+    sale({ date: day(2), vale: '1512', wh: 'cerro', items: [['Paneles 685 W', 4]], extra: -40, notes: 'Combo de 4 paneles' });
     sale({ date: day(3), vale: '1520', wh: 'lisa', items: [['Oupes Mega 2', 1]], extra: 80, g: [['55503344', 80]], pay: 'mixto', cash: 500 });
     sale({ date: day(3), vale: '1521', wh: 'cerro', items: [['Ecoflow D2 extra battery', 1]], extra: 20, g: [['55507788 Yanet Gil', 20]] });
     sale({ date: day(3), vale: '1522', wh: 'cerro', type: 'anticipada', items: [['Ecoflow Delta 3 Max', 1]], extra: 50, g: [['Ernesto', 30]], client: 'Rosa Fernández', phone: '52223344', muni: 'Diez de Octubre' });
@@ -79,6 +80,8 @@ async function seed(page) {
     state.cash.push({ id: S.uid(), date: S.addDays(ws, -1), ts: 2, wh: 'lisa', amount: 615, type: 'ajuste', note: 'Saldo del cierre anterior' });
     state.cash.push({ id: S.uid(), date: day(2), ts: 3, wh: 'lisa', amount: -1500, type: 'entrega', note: 'Entregado a los dueños' });
     state.cash.push({ id: S.uid(), date: day(3), ts: 4, wh: 'cerro', amount: -15, type: 'gasto', note: 'Transporte del panel' });
+    state.cash.push({ id: S.uid(), date: day(3), ts: 5, wh: 'cerro', account: 'duenos', amount: -1200, type: 'entrega', note: 'Entregado a los dueños' });
+    state.gestorAdjust.push({ id: S.uid(), gid: G['Luis Alberto'], date: S.addDays(ws, -1), ts: 6, amount: 30, note: 'Comisiones de septiembre' });
     // Incidencias
     state.incidents.push({ id: S.uid(), date: S.addDays(t, -1), ts: 10, wh: 'cerro', pid: P('Paneles rígidos RONMA de 685W').id, status: 'abierta', text: '1 panel RONMA 685W no se trajo a Kholy desde el Cerro' });
     state.incidents.push({ id: S.uid(), date: t, ts: 11, wh: 'cerro', pid: P('Ecoflow Delta 3').id, status: 'abierta', text: 'En el último cierre en el Cerro había 5 Delta 3 y ahora falta 1' });
@@ -95,6 +98,8 @@ async function seed(page) {
     colorScheme: DARK ? 'dark' : 'light', locale: 'es-ES', serviceWorkers: 'block',
   });
   const page = await context.newPage();
+  // Fecha fija (un viernes) para que las capturas sean iguales cualquier día que se generen.
+  await page.clock.setFixedTime(new Date(process.env.FAKE_NOW || '2026-10-02T19:41:00'));
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && !m.text().startsWith('Failed to load resource') && errors.push(m.text()));
@@ -259,6 +264,12 @@ async function seed(page) {
     await page.evaluate(() => window.scrollTo(0, 500));
     await page.click('[data-act="cash"][data-wh="lisa"]');
     await shot('15-caja');
+    await page.locator('.sheet-wrap.open').last().locator('[data-act="mv"][data-type="gasto"]').click();
+    await page.waitForTimeout(400);
+    await top('[data-bind="amount"]').fill('15');
+    await top('[data-bind="note"]').fill('Transporte');
+    await shot('26-gasto');
+    await closeTop();
     await closeTop();
     await page.click('[data-act="incidents"]');
     await shot('16-incidencias');
@@ -269,6 +280,12 @@ async function seed(page) {
     await shot('17-gestores');
     await page.click('[data-act="gestor"] >> nth=0');
     await shot('18-gestor');
+    await top('[data-act="adjust"]').click();
+    await page.waitForTimeout(400);
+    await top('[data-bind="amount"]').fill('30');
+    await top('[data-bind="note"]').fill('Comisiones de septiembre');
+    await shot('25-ajustar-deuda');
+    await closeTop();
     await closeTop();
     await page.click('.week-card');
     await shot('19-liquidacion');
@@ -291,6 +308,12 @@ async function seed(page) {
     await page.click('[data-act="settings"]');
     await shot('24-ajustes');
     await closeTop();
+
+    // 12. Novedades de la versión
+    await page.evaluate(async () => { const S = await import('/js/store.js'); S.state.settings.seenVersion = ''; S.save(); });
+    await page.reload();
+    await decorate();
+    await shot('27-novedades');
   } else {
     await shot('01-hoy-oscuro');
     await tab('ventas');

@@ -2,16 +2,16 @@
 import { icon } from './icons.js';
 import {
   state, today, fmtDate, fmtDateLong, fmtTime, money, num, norm, isSunday, weekStart, addDays, parseDate,
-  wh, whName, productName, gestorName, stockMap, cashMap, activeSales, saleCalc, itemsSummary, openIncidents,
-  hasIncident, gestorStats, weekSummary,
+  wh, whName, productName, gestorName, stockMap, moneyMap, activeSales, saleCalc, salesTotals, itemsSummary, openIncidents,
+  hasIncident, gestorStats, weekSummary, APP_VERSION,
 } from './store.js';
 import { $, esc, seg, section, navRow, btnRow, infoRow, emptyRow, confirmBox, actionSheet, toast } from './ui.js';
 import { ctx, onRefresh, refresh, commit, copyText, shareText } from './core.js';
 import { buildClosure } from './closure.js';
 import {
   saleEditor, saleDetail, productSheet, productEditor, moveEditor, countSheet, importSheet, finderSheet,
-  cashSheet, incidentsSheet, incidentEditor, gestorSheet, gestorEditor, weekSheet, settingsSheet, welcomeSheet,
-  exportBackup,
+  moneySheet, incidentsSheet, incidentEditor, gestorSheet, gestorEditor, weekSheet, settingsSheet, welcomeSheet,
+  exportBackup, whatsNewSheet,
 } from './sheets.js';
 
 const TABS = [
@@ -56,14 +56,23 @@ function saleRow(s) {
     </button>`;
 }
 
+/** Fila con el reparto de un grupo de ventas: dueños, caja, gestores (y rebajas). */
+function splitBar(t) {
+  return `<div class="row split-bar">
+    <span class="acc-duenos"><small>Dueños</small><b>${money(t.owners)}</b></span>
+    <span class="acc-caja"><small>Caja</small><b>${money(t.caja)}</b></span>
+    <span><small>Gestores</small><b>${money(t.gest)}</b></span>
+    ${t.discount ? `<span><small>Rebajas</small><b class="orange">${money(t.discount)}</b></span>` : ''}
+  </div>`;
+}
+
 /* ---------- HOY ---------- */
 function viewHoy() {
   const S = state.settings;
   const d = ctx.date;
   const sales = activeSales().filter((s) => s.date === d).sort((a, b) => b.ts - a.ts);
-  const calc = sales.map(saleCalc);
-  const tot = (k) => calc.reduce((a, c) => a + c[k], 0);
-  const cash = cashMap(d);
+  const t = salesTotals(sales);
+  const bal = moneyMap(d);
   const incOpen = openIncidents().length;
   const pend = activeSales().filter((s) => s.type === 'anticipada' && !s.delivered).length;
   const counted = (w) => state.counts.filter((c) => c.date === d && c.wh === w).sort((a, b) => b.ts - a.ts)[0];
@@ -85,13 +94,14 @@ function viewHoy() {
       ${tile('swap', 'Traslado', 'teal', 'traslado')}
       ${tile('doc', 'Cierre', 'purple', 'goCierre')}
     </div>
-    <div class="sec-h">Resumen del día</div>
+    <div class="sec-h">Resumen del día <span class="sec-r">${t.count} venta${t.count === 1 ? '' : 's'}</span></div>
     <div class="stats4">
-      <div><span>Ventas</span><b>${sales.length}</b></div>
-      <div><span>Cobrado</span><b>${money(tot('total'))}</b></div>
-      <div><span>Gestores</span><b>${money(tot('gest'))}</b></div>
-      <div><span>Dueños</span><b>${money(tot('owners'))}</b></div>
+      <div><span>Cobrado</span><b>${money(t.total)}</b></div>
+      <div class="acc-duenos"><span>Dueños</span><b>${money(t.owners)}</b></div>
+      <div class="acc-caja"><span>Caja</span><b>${money(t.caja)}</b></div>
+      <div><span>Gestores</span><b>${money(t.gest)}</b></div>
     </div>
+    ${t.discount ? `<div class="sec-f">Incluye ${money(t.discount)} de rebajas y combos.</div>` : ''}
     ${section('Revisión de inventario', state.warehouses.map((x) => {
       const c = counted(x.id);
       return navRow('count', `Conteo ${esc(x.emoji)} ${esc(x.name)}`, {
@@ -99,7 +109,10 @@ function viewHoy() {
         attrs: `data-wh="${x.id}"`,
       });
     }).join(''), 'Al empezar el turno cuenta cada almacén para comprobar que coincide con el último cierre.')}
-    ${section('Dinero en caja', state.warehouses.map((x) => navRow('cash', `${esc(x.emoji)} ${esc(x.name)}`, { right: `<b>${money(cash[x.id] || 0)}</b>`, attrs: `data-wh="${x.id}"` })).join(''))}
+    ${section('Dinero', state.warehouses.map((x) => navRow('cash', `${esc(x.emoji)} ${esc(x.name)}`, {
+      right: `<span class="money2"><span><small>Caja</small><b>${money(bal[x.id]?.caja || 0)}</b></span><span><small>Dueños</small><b>${money(bal[x.id]?.duenos || 0)}</b></span></span>`,
+      attrs: `data-wh="${x.id}"`,
+    })).join(''), 'Toca un almacén para anotar entregas a los dueños, gastos, ingresos o hacer un arqueo.')}
     ${section(`Ventas del ${fmtDate(d)}`, (sales.length ? sales.map(saleRow).join('') : emptyRow('Aún no hay ventas. Toca “Nueva venta”.')) + btnRow('newSale', 'Nueva venta', { ic: 'plus' }))}
     ${section('Seguimiento', `
       ${navRow('incidents', 'Incidencias abiertas', { ic: 'alert', color: 'orange', right: incOpen ? `<span class="badge-n">${incOpen}</span>` : '0' })}
@@ -133,8 +146,8 @@ function salesListHtml() {
   }
   return [...groups.entries()]
     .map(([date, arr]) => {
-      const total = arr.filter((s) => !s.void).reduce((a, s) => a + saleCalc(s).total, 0);
-      return section(`${fmtDateLong(date)} <span class="sec-r">${money(total)}</span>`, arr.map(saleRow).join(''));
+      const t = salesTotals(arr);
+      return section(`${fmtDateLong(date)} <span class="sec-r">${money(t.total)}</span>`, (t.count ? splitBar(t) : '') + arr.map(saleRow).join(''));
     })
     .join('');
 }
@@ -328,7 +341,7 @@ const acts = {
   incidents: () => incidentsSheet(),
   traslado: () => moveEditor('traslado'),
   entrada: () => moveEditor('entrada'),
-  cash: (el) => cashSheet(el.dataset.wh),
+  cash: (el) => moneySheet(el.dataset.wh),
   week: () => weekSheet(),
   backup: () => exportBackup(),
   goToday: () => {
@@ -487,6 +500,7 @@ render();
 registerSW();
 navigator.storage?.persist?.().catch(() => {});
 if (!state.settings.onboarded) welcomeSheet();
+else if (state.settings.seenVersion !== APP_VERSION) whatsNewSheet();
 
 // Al volver a la app se refresca la vista. Si el turno pasa de medianoche se mantiene
 // la fecha de trabajo y la pantalla Hoy muestra un aviso para volver al día actual.

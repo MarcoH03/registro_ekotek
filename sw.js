@@ -1,6 +1,6 @@
 // Service worker: guarda la app en el iPhone para usarla sin conexión.
 // Cambia VERSION en cada publicación para que los teléfonos descarguen la nueva versión.
-const VERSION = 'ekotek-v1.0.0';
+const VERSION = 'ekotek-v1.1.0';
 const ASSETS = [
   './',
   'index.html',

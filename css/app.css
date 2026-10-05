@@ -389,3 +389,29 @@ html.has-sheet #app { transform: scale(0.94); border-radius: 12px; }
 @media (min-width: 700px) {
   #view { max-width: 700px; margin: 0 auto; }
 }
+
+/* ---------- dinero: dueños y caja (v1.1) ---------- */
+.acc-duenos b { color: var(--blue); }
+.acc-caja b { color: var(--teal); }
+.pill.blue { background: rgba(0, 122, 255, 0.12); color: var(--blue); }
+.pill.teal { background: rgba(48, 176, 199, 0.16); color: var(--teal); }
+.money2 { display: flex; gap: 14px; flex-direction: row !important; align-items: flex-end; }
+.money2 > span { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
+.money2 small { font-size: 11px; color: var(--label2); }
+.money2 > span:first-child b { color: var(--teal); }
+.money2 > span:last-child b { color: var(--blue); }
+.split-bar { gap: 8px; min-height: 0; padding-top: 9px; padding-bottom: 9px; background: var(--card2); }
+.split-bar > span { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.split-bar small { font-size: 11px; color: var(--label2); }
+.split-bar b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.split-list { margin-top: 12px; }
+.row.info.strong { font-size: 17px; }
+.money-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px 16px 0; }
+.money-hero .mh { background: var(--card); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 2px; box-shadow: var(--shadow); min-width: 0; }
+.money-hero .mh span { font-size: 13px; color: var(--label2); text-transform: uppercase; }
+.money-hero .mh b { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; }
+.money-hero .mh.caja b { color: var(--teal); }
+.money-hero .mh.duenos b { color: var(--blue); }
+.money-hero .mh small { font-size: 12px; color: var(--label2); }
+.note-card { display: flex; gap: 12px; margin: 20px 16px 0; padding: 14px; border-radius: 12px; background: rgba(255, 149, 0, 0.12); font-size: 15px; }
+.note-card .ic { color: var(--orange); flex: none; margin-top: 2px; }
