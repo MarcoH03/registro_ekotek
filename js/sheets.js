@@ -3,7 +3,7 @@ import { icon } from './icons.js';
 import {
   state, save, uid, num, round2, money, fmtDate, fmtDateLong, fmtTime, today, addDays, weekStart, parseDate, norm,
   wh, whName, product, productName, gestor, gestorName, addProduct, addGestor, stockMap, addMovement,
-  setStock, syncSaleMovements, saleCalc, itemsSummary, cashMap, cashEntries, CASH_TYPES, gestorLedger,
+  setStock, syncSaleMovements, saleCalc, itemsSummary, moneyMap, moneyEntries, MONEY_TYPES, ACCOUNTS, accountOf, moneyOut, gestorLedger,
   gestorStats, weekSummary, parseStockText, applyStockImport, mergeProducts, productInUse, recommendWh,
   nearestWh, hasIncident, replaceState, APP_VERSION,
 } from './store.js';
@@ -114,21 +114,25 @@ export function saleEditor(existing = null, prefill = {}) {
   const baseOf = () => round2(d.items.reduce((a, i) => a + num(i.qty) * num(i.price), 0));
   const totalOf = () => (d.totalTouched && d.total !== '' ? num(d.total) : baseOf());
 
+  const calc = () => saleCalc({ ...d, total: totalOf() });
   const summary = () => {
-    const c = saleCalc({ ...d, total: totalOf() });
+    const c = calc();
     return `
       ${infoRow('Precio de la empresa', money(c.base))}
       ${infoRow('Cobrado al cliente', `<b>${money(c.total)}</b>`)}
-      ${infoRow('Sobreprecio (extra)', money(c.extra), c.extra < 0 ? 'warn' : '')}
-      ${infoRow('Comisión de gestores', money(c.gest))}
-      ${infoRow('Extra para los dueños', money(c.ownerExtra), c.ownerExtra < 0 ? 'warn' : '')}
-      ${infoRow('<b>Total para los dueños</b>', `<b>${money(c.owners)}</b>`)}`;
+      ${c.discount ? infoRow('Rebaja / combo', `<span class="orange">−${money(c.discount)}</span>`) : infoRow('Sobreprecio', money(c.extra))}
+      ${c.gest ? infoRow('Comisión de gestores (se paga desde la caja)', money(c.gest)) : ''}`;
+  };
+  const splitNote = () => {
+    const c = calc();
+    if (c.gest > Math.max(0, c.extra)) return `La comisión de gestores supera el sobreprecio: la caja recibe la comisión (${money(c.gest)}) para poder pagarla y la diferencia sale de la parte de los dueños.`;
+    if (c.discount) return `Se cobró ${money(c.discount)} menos que el precio de la empresa (rebaja o combo): la diferencia la asumen los dueños.`;
+    return 'Los dueños reciben el precio de la empresa y la caja todo el sobreprecio. Las comisiones de los gestores se les pagan desde la caja. Puedes escribir otra cantidad para la caja.';
   };
 
   const render = () => {
     const st = stockMap();
     const near = nearestWh(d.municipio);
-    const isCash = d.payMethod !== 'transferencia';
     return `
       ${section('', `
         ${field('Fecha', `<input class="inp" type="date" data-bind="date" value="${d.date}">`)}
@@ -165,8 +169,8 @@ export function saleEditor(existing = null, prefill = {}) {
         ${field('Cobrado al cliente', inp('total', d.totalTouched ? d.total : '', `inputmode="decimal" placeholder="${baseOf()}"`))}
         <div class="row"><div class="grow">${seg('payMethod', [['efectivo', 'Efectivo'], ['transferencia', 'Transferencia'], ['mixto', 'Mixto']], d.payMethod)}</div></div>
         ${d.payMethod === 'mixto' ? field('Recibido en efectivo', inp('cashAmount', d.cashAmount, 'inputmode="decimal" placeholder="0"')) : ''}
-        ${isCash ? `<div class="row col"><span class="lbl small">Caja donde entra el efectivo</span>${whSeg('cashWh', d.cashWh || d.wh)}</div>` : ''}
-      `, 'Si el cliente pagó más que el precio de la empresa, la diferencia es el sobreprecio que se reparte entre gestores y dueños.')}
+        <div class="row col"><span class="lbl small">Almacén donde se anota el dinero</span>${whSeg('cashWh', d.cashWh || d.wh)}</div>
+      `, 'Si el cliente pagó más que el precio de la empresa, la diferencia es el sobreprecio. Si pagó menos, es una rebaja o combo.')}
 
       <div class="sec-h">Comisión de gestores</div>
       <div class="list">
@@ -181,6 +185,11 @@ export function saleEditor(existing = null, prefill = {}) {
 
       <div class="sec-h">Reparto del dinero</div>
       <div class="list" data-summary>${summary()}</div>
+      <div class="list split-list">
+        ${field('Para la caja', inp('cajaManual', d.cajaManual ?? '', `inputmode="decimal" placeholder="${calc().cajaAuto}"`))}
+        <div class="row info strong"><span class="grow"><b>Para los dueños</b></span><span class="r"><b data-owners>${money(calc().owners)}</b></span></div>
+      </div>
+      <div class="sec-f" data-splitnote>${splitNote()}</div>
 
       ${section('Cliente', `
         ${field('Nombre', inp('client', d.client, `placeholder="${d.type === 'anticipada' ? 'Obligatorio' : 'Opcional'}"`))}
@@ -206,6 +215,13 @@ export function saleEditor(existing = null, prefill = {}) {
   const updateSummary = (s) => {
     const box = $('[data-summary]', s.body);
     if (box) box.innerHTML = summary();
+    const c = calc();
+    const own = $('[data-owners]', s.body);
+    if (own) own.textContent = money(c.owners);
+    const cj = $('[data-bind="cajaManual"]', s.body);
+    if (cj) cj.placeholder = c.cajaAuto;
+    const note = $('[data-splitnote]', s.body);
+    if (note) note.textContent = splitNote();
     const base = $('[data-base]', s.body);
     if (base) base.textContent = money(baseOf());
     const t = $('[data-bind="total"]', s.body);
@@ -261,8 +277,9 @@ export function saleEditor(existing = null, prefill = {}) {
       addGest: async (el, ev, s) => {
         const gid = await pickGestor();
         if (!gid) return;
-        const c = saleCalc({ ...d, total: totalOf() });
-        d.gestores.push({ gid, amount: c.ownerExtra > 0 ? String(c.ownerExtra) : '' });
+        const c = calc();
+        const free = round2(c.extra - c.gest);
+        d.gestores.push({ gid, amount: free > 0 ? String(free) : '' });
         s.render();
       },
       chgGest: async (el, ev, s) => {
@@ -322,6 +339,7 @@ export function saleEditor(existing = null, prefill = {}) {
           cashAmount: d.payMethod === 'mixto' ? num(d.cashAmount) : 0,
           cashWh: d.cashWh || d.wh,
           gestores: d.gestores.filter((g) => g.gid).map((g) => ({ gid: g.gid, amount: num(g.amount) })),
+          cajaManual: d.cajaManual === '' || d.cajaManual == null ? null : num(d.cajaManual),
           client: d.client.trim(),
           phone: d.phone.trim(),
           municipio: d.municipio,
@@ -374,13 +392,13 @@ export function saleDetail(id) {
         ${section('Cobro', `
           ${infoRow('Precio de la empresa', money(c.base))}
           ${infoRow('Cobrado al cliente', money(c.total))}
-          ${infoRow('Sobreprecio', money(c.extra))}
+          ${c.discount ? infoRow('Rebaja / combo', `<span class="orange">−${money(c.discount)}</span>`) : infoRow('Sobreprecio', money(c.extra))}
           ${infoRow('Método de pago', { efectivo: 'Efectivo', transferencia: 'Transferencia', mixto: `Mixto (${money(c.cash)} en efectivo)` }[v.payMethod])}
-          ${c.cash ? infoRow('Caja', esc(whName(v.cashWh || v.wh))) : ''}`)}
+          ${infoRow('Dinero anotado en', `${esc(wh(v.cashWh || v.wh)?.emoji || '')} ${esc(whName(v.cashWh || v.wh))}`)}`)}
         ${section('Reparto', `
-          ${v.gestores.map((g) => navRow('openGestor', esc(gestorName(g.gid)), { right: money(g.amount), attrs: `data-id="${g.gid}"`, sub: 'Gestor' })).join('')}
-          ${infoRow('Extra para los dueños', money(c.ownerExtra))}
-          ${infoRow('<b>Total para los dueños</b>', `<b>${money(c.owners)}</b>`)}`)}
+          ${v.gestores.map((g) => navRow('openGestor', esc(gestorName(g.gid)), { right: money(g.amount), attrs: `data-id="${g.gid}"`, sub: 'Comisión del gestor (sale de la caja)' })).join('')}
+          ${infoRow(`Para la caja${c.cajaManual ? ' (a mano)' : ''}`, money(c.caja))}
+          ${infoRow('<b>Para los dueños</b>', `<b>${money(c.owners)}</b>`)}`)}
         ${v.client || v.phone || v.municipio || v.address ? section('Cliente', `
           ${v.client ? infoRow('Nombre', esc(v.client)) : ''}
           ${v.phone ? `<a class="row info" href="tel:${esc(v.phone)}"><span class="grow">Teléfono</span><span class="r link">${esc(v.phone)}</span></a>` : ''}
@@ -542,7 +560,7 @@ export function productEditor(pid = null) {
       ${section('', `
         ${field('Nombre', inp('name', d.name, 'placeholder="Ej. Ecoflow Delta 3"'))}
         ${field(`Precio (${cur()})`, inp('price', d.price, 'inputmode="decimal" placeholder="0"'))}
-      `, 'Precio de la empresa, sin la comisión de los gestores.')}
+      `, `Precio de la empresa, sin la comisión de los gestores.${p ? ' Cambiarlo no modifica las ventas ya registradas: cada venta guarda el precio con el que se hizo.' : ''}`)}
       ${section('Otros nombres', `<div class="row"><input class="inp left" data-bind="aliases" value="${esc(d.aliases)}" placeholder="Separados por comas"></div>`, 'Sirven para reconocer el producto al importar un cierre (ej. “Bluetty, Bluebety”).')}
       ${!p ? section('Stock inicial', state.warehouses.map((w) => field(`${w.emoji} ${esc(w.name)}`, inp(`stock.${w.id}`, d.stock[w.id] || '', 'inputmode="numeric" placeholder="0"'))).join('')) : ''}`,
     onInput: (s, el) => el.dataset.bind && setPath(d, el.dataset.bind, el.value),
@@ -941,66 +959,112 @@ export function finderSheet() {
   });
 }
 
-/* ======================= Caja ======================= */
-export function cashSheet(whId) {
+/* ======================= Dinero: caja y dueños ======================= */
+const ACC_PILL = (acc) => `<span class="pill sm ${acc === 'caja' ? 'teal' : 'blue'}">${ACCOUNTS[acc]}</span>`;
+
+export function moneySheet(whId) {
+  const d = { acc: 'todo' };
   openSheet({
-    title: () => `Caja ${whName(whId)}`,
+    title: () => `Dinero ${whName(whId)}`,
     live: true,
     render: () => {
-      const bal = cashMap()[whId] || 0;
-      const list = cashEntries(whId).slice(0, 80);
+      const bal = moneyMap()[whId] || { caja: 0, duenos: 0 };
+      const gestPend = round2(state.gestores.reduce((a, g) => a + Math.max(0, gestorStats(g.id).balance), 0));
+      const list = moneyEntries(whId, d.acc === 'todo' ? null : d.acc).slice(0, 100);
       return `
-        <div class="hero-card">
-          <div class="hero-label">Dinero en caja</div>
-          <div class="hero-amount">${money(bal)}</div>
-          <div class="hero-meta">${esc(wh(whId).emoji)} ${esc(whName(whId))}</div>
+        <div class="money-hero">
+          <div class="mh caja"><span>Caja</span><b>${money(bal.caja)}</b><small>Sobreprecio de las ventas</small></div>
+          <div class="mh duenos"><span>Dueños</span><b>${money(bal.duenos)}</b><small>Pendiente de entregar</small></div>
         </div>
+        <div class="sec-f">${esc(wh(whId).emoji)} ${esc(whName(whId))} · total anotado ${money(bal.caja + bal.duenos)}${gestPend > 0 ? `<br>Comisiones de gestores por pagar (todos los almacenes): ${money(gestPend)}. Se pagan desde la caja.` : ''}</div>
         <div class="action-grid">
           <button data-act="mv" data-type="entrega">${icon('outbox')}<span>Entrega a dueños</span></button>
           <button data-act="mv" data-type="gasto">${icon('wallet')}<span>Gasto</span></button>
           <button data-act="mv" data-type="ingreso">${icon('inbox')}<span>Ingreso</span></button>
-          <button data-act="arqueo">${icon('cash')}<span>Arqueo</span></button>
+          <button data-act="mv" data-type="ajuste">${icon('cash')}<span>Arqueo</span></button>
         </div>
-        <div class="sec-f">El efectivo de las ventas entra solo. Usa “Arqueo” para fijar lo que hay contado físicamente.</div>
-        ${section('Movimientos', list.length ? list.map((e) => `
+        <div class="sec-f">Cada venta reparte su dinero: el precio de la empresa a los dueños y el sobreprecio (con las comisiones de los gestores) a la caja. Los pagos a gestores salen de la caja. Los gastos e ingresos se anotan en la cuenta que elijas.</div>
+        <div class="sec-h">Movimientos</div>
+        <div class="pad">${seg('acc', [['todo', 'Todo'], ['caja', 'Caja'], ['duenos', 'Dueños']], d.acc)}</div>
+        <div class="list" style="margin-top:12px">${list.length ? list.map((e) => `
           <button class="row info" data-act="entry" ${e.cashId ? `data-cash="${e.cashId}"` : ''} ${e.saleId ? `data-sale="${e.saleId}"` : ''}>
-            <span class="grow"><span class="t">${esc(e.label)}</span><span class="s">${fmtDate(e.date)}${e.note ? ' · ' + esc(e.note) : ''}</span></span>
+            <span class="grow"><span class="t">${ACC_PILL(e.account)} ${esc(e.label)}</span><span class="s">${fmtDate(e.date)}${e.note ? ' · ' + esc(e.note) : ''}</span></span>
             <span class="r ${e.amount < 0 ? 'bad' : 'ok'}">${e.amount > 0 ? '+' : ''}${money(e.amount)}</span>
-          </button>`).join('') : emptyRow('Sin movimientos'))}
+          </button>`).join('') : emptyRow('Sin movimientos')}</div>
         <div class="spacer"></div>`;
     },
     acts: {
-      mv: async (el) => {
-        const type = el.dataset.type;
-        const v = await promptBox({ title: CASH_TYPES[type], message: `Importe en ${cur()}`, inputmode: 'decimal', placeholder: '0' });
-        if (v == null || !num(v)) return;
-        const note = await promptBox({ title: 'Nota', message: 'Opcional', value: type === 'entrega' ? 'Entregado a los dueños' : '' });
-        state.cash.push({ id: uid(), date: ctx.date, ts: Date.now(), wh: whId, amount: type === 'ingreso' ? Math.abs(num(v)) : -Math.abs(num(v)), type, note: note || '' });
-        commit();
-        toast('Movimiento guardado');
+      seg: (el, ev, s) => {
+        d.acc = el.dataset.v;
+        s.render();
       },
-      arqueo: async () => {
-        const bal = cashMap()[whId] || 0;
-        const v = await promptBox({ title: 'Arqueo de caja', message: `Según el registro hay ${money(bal)}. ¿Cuánto hay contado?`, inputmode: 'decimal', value: String(bal) });
-        if (v == null || v === '') return;
-        const diff = round2(num(v) - bal);
-        if (!diff) return toast('La caja cuadra');
-        state.cash.push({ id: uid(), date: ctx.date, ts: Date.now(), wh: whId, amount: diff, type: 'ajuste', note: `Registro ${money(bal)}, contado ${money(num(v))}` });
-        if (await confirmBox('Diferencia en caja', `${diff < 0 ? 'Faltan' : 'Sobran'} ${money(Math.abs(diff))}. ¿Crear una incidencia?`, 'Crear')) {
-          state.incidents.push({ id: uid(), date: ctx.date, ts: Date.now(), wh: whId, pid: null, status: 'abierta', text: `Caja ${whName(whId)}: según el registro había ${money(bal)} y se contaron ${money(num(v))} (${diff < 0 ? 'faltan' : 'sobran'} ${money(Math.abs(diff))})` });
-        }
-        commit();
-      },
+      mv: (el) => moneyMoveEditor(whId, el.dataset.type, d.acc === 'duenos' ? 'duenos' : 'caja'),
       entry: async (el) => {
         if (el.dataset.sale) return saleDetail(el.dataset.sale);
         const c = state.cash.find((x) => x.id === el.dataset.cash);
         if (!c) return;
-        if (c.ref) return alertBox({ title: 'Movimiento vinculado', message: 'Este movimiento pertenece a un pago. Elimínalo desde la ficha del gestor.' });
-        const a = await actionSheet({ title: `${CASH_TYPES[c.type]} · ${money(c.amount)}`, actions: [{ label: 'Eliminar movimiento', value: 'del', destructive: true }] });
+        if (c.ref) return alertBox({ title: 'Movimiento vinculado', message: 'Este movimiento pertenece a un pago. Elimínalo desde la ficha del gestor o la liquidación semanal.' });
+        const a = await actionSheet({ title: `${MONEY_TYPES[c.type]} · ${ACCOUNTS[accountOf(c)]} · ${money(c.amount)}`, actions: [{ label: 'Eliminar movimiento', value: 'del', destructive: true }] });
         if (a === 'del') {
           state.cash = state.cash.filter((x) => x.id !== c.id);
           commit();
         }
+      },
+    },
+  });
+}
+
+export function moneyMoveEditor(whId, type = 'gasto', account = 'caja') {
+  const d = { wh: whId, type, account: type === 'entrega' ? 'duenos' : account, amount: '', note: '', date: ctx.date };
+  const TITLES = { gasto: 'Gasto', ingreso: 'Ingreso', entrega: 'Entrega a los dueños', ajuste: 'Arqueo' };
+  const balance = () => moneyMap()[d.wh]?.[d.account] || 0;
+  openSheet({
+    title: () => TITLES[d.type],
+    left: { label: 'Cancelar' },
+    right: { label: 'Guardar', act: 'save', bold: true },
+    dismissable: false,
+    render: () => `
+      <div class="pad">${seg('type', [['gasto', 'Gasto'], ['ingreso', 'Ingreso'], ['entrega', 'Entrega'], ['ajuste', 'Arqueo']], d.type)}</div>
+      ${d.type !== 'entrega' ? `<div class="sec-h">Cuenta</div><div class="pad">${seg('account', [['caja', 'Caja'], ['duenos', 'Dueños']], d.account)}</div>` : ''}
+      <div class="sec-h">Almacén</div>
+      <div class="pad">${whSeg('wh', d.wh)}</div>
+      ${section('', `
+        ${infoRow(`Saldo actual de ${d.account === 'caja' ? 'la caja' : 'los dueños'}`, money(balance()))}
+        ${field(d.type === 'ajuste' ? 'Dinero contado' : `Importe (${cur()})`, inp('amount', d.amount, `inputmode="decimal" placeholder="${d.type === 'ajuste' ? balance() : '0'}"`))}
+        ${field('Fecha', `<input class="inp" type="date" data-bind="date" value="${d.date}">`)}
+        <div class="row"><input class="inp left" data-bind="note" value="${esc(d.note)}" placeholder="${d.type === 'gasto' ? 'En qué se gastó (opcional)' : 'Nota (opcional)'}"></div>`,
+        { gasto: 'Resta de la cuenta elegida.', ingreso: 'Suma a la cuenta elegida (dinero que entra sin ser una venta).', entrega: 'Dinero entregado a los dueños: resta de su cuenta.', ajuste: 'Escribe lo que hay contado. La diferencia con el saldo se anota como ajuste; úsalo también para poner el saldo inicial.' }[d.type])}
+      <div class="spacer"></div>`,
+    onInput: (s, el) => el.dataset.bind && setPath(d, el.dataset.bind, el.value),
+    acts: {
+      seg: (el, ev, s) => {
+        d[el.dataset.name] = el.dataset.v;
+        if (d.type === 'entrega') d.account = 'duenos';
+        s.render();
+      },
+      save: async (el, ev, s) => {
+        if (d.amount === '') return alertBox({ title: 'Indica el importe' });
+        const v = round2(num(d.amount));
+        const base = { id: uid(), date: d.date || ctx.date, ts: Date.now(), wh: d.wh, account: d.account, type: d.type, note: d.note.trim() };
+        if (d.type === 'ajuste') {
+          const bal = moneyMap(d.date)[d.wh]?.[d.account] || 0;
+          const diff = round2(v - bal);
+          if (!diff) {
+            s.close();
+            return toast('La cuenta cuadra');
+          }
+          const who = d.account === 'caja' ? `Caja ${whName(d.wh)}` : `Dinero de los dueños ${whName(d.wh)}`;
+          state.cash.push({ ...base, amount: diff, note: base.note || `Registro ${money(bal)}, contado ${money(v)}` });
+          if ((await confirmBox('Diferencia', `${diff < 0 ? 'Faltan' : 'Sobran'} ${money(Math.abs(diff))}. ¿Crear una incidencia?`, 'Crear'))) {
+            state.incidents.push({ id: uid(), date: base.date, ts: Date.now(), wh: d.wh, pid: null, status: 'abierta', text: `${who}: según el registro había ${money(bal)} y se contaron ${money(v)} (${diff < 0 ? 'faltan' : 'sobran'} ${money(Math.abs(diff))})` });
+          }
+        } else {
+          if (!v) return alertBox({ title: 'Indica el importe' });
+          state.cash.push({ ...base, amount: d.type === 'ingreso' ? Math.abs(v) : -Math.abs(v), note: base.note || (d.type === 'entrega' ? 'Entregado a los dueños' : '') });
+        }
+        commit();
+        s.close();
+        toast('Movimiento guardado');
       },
     },
   });
@@ -1120,19 +1184,20 @@ export function gestorSheet(gid) {
       const tel = (g.phone || (/^\+?\d[\d\s]{6,}$/.test(g.name) ? g.name : '')).replace(/\s/g, '');
       return `
         <div class="stats3">
-          <div><span>Ganado</span><b>${money(st.earned)}</b></div>
+          <div><span>Ganado</span><b>${money(st.earned + st.adjust)}</b></div>
           <div><span>Pagado</span><b>${money(st.paid)}</b></div>
           <div class="${st.balance > 0 ? 'hl' : ''}"><span>Pendiente</span><b>${money(st.balance)}</b></div>
         </div>
-        <div class="sec-f">Esta semana: ${money(wk.earned)} en comisiones.</div>
+        <div class="sec-f">Esta semana: ${money(wk.earned)} en comisiones.${st.adjust ? ` Incluye ${money(st.adjust)} de deudas anteriores o ajustes.` : ''}</div>
         <div class="action-grid">
           <button data-act="pay">${icon('cash')}<span>Registrar pago</span></button>
+          <button data-act="adjust">${icon('pencil')}<span>Ajustar deuda</span></button>
           ${tel ? `<a href="tel:${esc(tel)}">${icon('phone')}<span>Llamar</span></a>` : ''}
           ${tel ? `<a href="https://wa.me/${esc(tel.replace(/^\+/, '').length === 8 ? '53' + tel : tel.replace(/^\+/, ''))}" target="_blank" rel="noopener">${icon('message')}<span>WhatsApp</span></a>` : ''}
         </div>
         ${g.notes ? section('Notas', `<div class="row note">${esc(g.notes)}</div>`) : ''}
         ${section('Historial', led.length ? led.map((e) => `
-          <button class="row info" data-act="entry" ${e.saleId ? `data-sale="${e.saleId}"` : ''} ${e.payId ? `data-pay="${e.payId}"` : ''}>
+          <button class="row info" data-act="entry" ${e.saleId ? `data-sale="${e.saleId}"` : ''} ${e.payId ? `data-pay="${e.payId}"` : ''} ${e.adjId ? `data-adj="${e.adjId}"` : ''}>
             <span class="grow"><span class="t">${esc(e.label)}</span><span class="s">${fmtDate(e.date)}</span></span>
             <span class="r ${e.amount < 0 ? 'bad' : 'ok'}">${e.amount > 0 ? '+' : ''}${money(e.amount)}</span>
           </button>`).join('') : emptyRow('Sin comisiones todavía'))}
@@ -1142,8 +1207,16 @@ export function gestorSheet(gid) {
     acts: {
       edit: () => gestorEditor(gid),
       pay: () => paymentEditor(gid),
+      adjust: () => debtEditor(gid),
       entry: async (el) => {
         if (el.dataset.sale) return saleDetail(el.dataset.sale);
+        if (el.dataset.adj) {
+          const j = state.gestorAdjust.find((x) => x.id === el.dataset.adj);
+          const a = await actionSheet({ title: `Ajuste de ${money(j.amount)}`, message: [fmtDate(j.date), j.note].filter(Boolean).join(' · '), actions: [{ label: 'Eliminar ajuste', value: 'del', destructive: true }] });
+          if (a !== 'del') return;
+          state.gestorAdjust = state.gestorAdjust.filter((x) => x.id !== j.id);
+          return commit();
+        }
         const p = state.gestorPayments.find((x) => x.id === el.dataset.pay);
         const a = await actionSheet({ title: `Pago de ${money(p.amount)}`, message: fmtDate(p.date), actions: [{ label: 'Eliminar pago', value: 'del', destructive: true }] });
         if (a !== 'del') return;
@@ -1152,7 +1225,7 @@ export function gestorSheet(gid) {
         commit();
       },
       del: async (el, ev, s) => {
-        const used = state.sales.some((x) => x.gestores.some((g) => g.gid === gid)) || state.gestorPayments.some((p) => p.gid === gid);
+        const used = state.sales.some((x) => x.gestores.some((g) => g.gid === gid)) || state.gestorPayments.some((p) => p.gid === gid) || state.gestorAdjust.some((a) => a.gid === gid);
         if (used) return alertBox({ title: 'No se puede eliminar', message: 'Este gestor tiene ventas o pagos registrados.' });
         if (!(await confirmBox('Eliminar gestor', '', 'Eliminar', true))) return;
         state.gestores = state.gestores.filter((g) => g.id !== gid);
@@ -1165,7 +1238,7 @@ export function gestorSheet(gid) {
 
 export function gestorEditor(gid = null) {
   const g = gid ? gestor(gid) : null;
-  const d = { name: g?.name || '', phone: g?.phone || '', notes: g?.notes || '' };
+  const d = { name: g?.name || '', phone: g?.phone || '', notes: g?.notes || '', debt: '' };
   openSheet({
     title: g ? 'Editar gestor' : 'Nuevo gestor',
     left: { label: 'Cancelar' },
@@ -1175,13 +1248,15 @@ export function gestorEditor(gid = null) {
       ${section('', `
         ${field('Nombre', inp('name', d.name, 'placeholder="Nombre o número"'))}
         ${field('Teléfono', inp('phone', d.phone, 'type="tel" inputmode="tel" placeholder="Opcional"'))}
-        <div class="row"><textarea class="ta" data-bind="notes" rows="3" placeholder="Notas (forma de pago, etc.)">${esc(d.notes)}</textarea></div>`)}`,
+        <div class="row"><textarea class="ta" data-bind="notes" rows="3" placeholder="Notas (forma de pago, etc.)">${esc(d.notes)}</textarea></div>`)}
+      ${!g ? section('', field('Ya se le debía', inp('debt', d.debt, 'inputmode="decimal" placeholder="0"')), 'Dinero que se le debía antes de usar la app (de ventas anteriores). Se suma a lo pendiente.') : ''}`,
     onInput: (s, el) => el.dataset.bind && setPath(d, el.dataset.bind, el.value),
     acts: {
       save: (el, ev, s) => {
         if (!d.name.trim()) return alertBox({ title: 'Falta el nombre' });
         const t = g || addGestor(d.name);
         Object.assign(t, { name: d.name.trim(), phone: d.phone.trim(), notes: d.notes.trim() });
+        if (!g && num(d.debt)) state.gestorAdjust.push({ id: uid(), gid: t.id, date: ctx.date, ts: Date.now(), amount: round2(num(d.debt)), note: 'Deuda anterior' });
         commit();
         s.close();
         toast('Gestor guardado');
@@ -1192,7 +1267,7 @@ export function gestorEditor(gid = null) {
 
 export function paymentEditor(gid, amount = null) {
   const bal = gestorStats(gid).balance;
-  const d = { amount: String(amount ?? (bal > 0 ? bal : '')), date: ctx.date, cashWh: '', note: '' };
+  const d = { amount: String(amount ?? (bal > 0 ? bal : '')), date: ctx.date, account: 'caja', wh: state.warehouses[0].id, note: '' };
   openSheet({
     title: 'Pago a gestor',
     left: { label: 'Cancelar' },
@@ -1204,24 +1279,72 @@ export function paymentEditor(gid, amount = null) {
         ${field(`Importe (${cur()})`, inp('amount', d.amount, 'inputmode="decimal" placeholder="0"'))}
         ${field('Fecha', `<input class="inp" type="date" data-bind="date" value="${d.date}">`)}
         <div class="row"><input class="inp left" data-bind="note" value="${esc(d.note)}" placeholder="Nota (opcional)"></div>`)}
-      <div class="sec-h">¿Sale de alguna caja?</div>
-      <div class="pad">${whSeg('cashWh', d.cashWh, [['', 'No']])}</div>
-      <div class="sec-f">Si eliges una caja, el importe se descuenta del dinero en caja de ese almacén.</div>`,
+      ${sourcePicker(d)}`,
     onInput: (s, el) => el.dataset.bind && setPath(d, el.dataset.bind, el.value),
     acts: {
       seg: (el, ev, s) => {
-        d.cashWh = el.dataset.v;
+        d[el.dataset.name] = el.dataset.v;
         s.render();
       },
       save: (el, ev, s) => {
         const a = round2(num(d.amount));
         if (!a) return alertBox({ title: 'Indica el importe' });
-        const p = { id: uid(), gid, date: d.date, ts: Date.now(), amount: a, note: d.note.trim(), cashWh: d.cashWh || null, week: weekStart(d.date) };
+        const p = { id: uid(), gid, date: d.date, ts: Date.now(), amount: a, note: d.note.trim(), cashWh: d.account ? d.wh : null, account: d.account || null, week: weekStart(d.date) };
         state.gestorPayments.push(p);
-        if (p.cashWh) state.cash.push({ id: uid(), date: p.date, ts: p.ts, wh: p.cashWh, amount: -a, type: 'pago_gestor', note: gestorName(gid), ref: p.id });
+        moneyOut({ wh: p.cashWh, account: p.account, amount: a, date: p.date, type: 'pago_gestor', note: gestorName(gid), ref: p.id });
         commit();
         s.close();
         toast('Pago registrado');
+      },
+    },
+  });
+}
+
+/** Bloque para elegir de qué cuenta sale un pago: d.account ('' | 'caja' | 'duenos') y d.wh. */
+function sourcePicker(d) {
+  return `
+    <div class="sec-h">¿De dónde sale el dinero?</div>
+    <div class="pad">${seg('account', [['caja', 'Caja'], ['duenos', 'Dueños'], ['', 'No descontar']], d.account)}</div>
+    ${d.account ? `<div class="pad" style="margin-top:8px">${whSeg('wh', d.wh)}</div>` : ''}
+    <div class="sec-f">${d.account ? `El importe se resta del dinero ${d.account === 'caja' ? 'de la caja' : 'de los dueños'} de ${esc(whName(d.wh))}.` : 'El pago queda registrado sin tocar el dinero de la caja ni el de los dueños.'}</div>`;
+}
+
+/** Ajustar lo que se le debe a un gestor (deudas de antes de usar la app, correcciones). */
+export function debtEditor(gid) {
+  const bal = gestorStats(gid).balance;
+  const d = { mode: 'sumar', amount: '', date: ctx.date, note: '' };
+  openSheet({
+    title: 'Ajustar deuda',
+    left: { label: 'Cancelar' },
+    right: { label: 'Guardar', act: 'save', bold: true },
+    dismissable: false,
+    render: () => `
+      <div class="hero-card"><div class="hero-label">${esc(gestorName(gid))}</div><div class="hero-meta">Se le debe ahora: <b>${money(bal)}</b></div></div>
+      <div class="pad" style="margin-top:14px">${seg('mode', [['sumar', 'Sumar'], ['restar', 'Restar'], ['fijar', 'Fijar total']], d.mode)}</div>
+      ${section('', `
+        ${field(d.mode === 'fijar' ? 'Se le debe en total' : `Importe (${cur()})`, inp('amount', d.amount, `inputmode="decimal" placeholder="${d.mode === 'fijar' ? bal : '0'}"`))}
+        ${field('Fecha', `<input class="inp" type="date" data-bind="date" value="${d.date}">`)}
+        <div class="row"><input class="inp left" data-bind="note" value="${esc(d.note)}" placeholder="Motivo (ej. ventas de septiembre)"></div>`,
+        { sumar: 'Suma dinero a lo que se le debe, por ejemplo comisiones de ventas anteriores a la app.', restar: 'Resta de lo que se le debe sin registrar un pago (por ejemplo, un error).', fijar: 'Deja lo pendiente exactamente en la cantidad que escribas.' }[d.mode])}`,
+    onInput: (s, el) => el.dataset.bind && setPath(d, el.dataset.bind, el.value),
+    acts: {
+      seg: (el, ev, s) => {
+        d.mode = el.dataset.v;
+        s.render();
+      },
+      save: (el, ev, s) => {
+        if (d.amount === '') return alertBox({ title: 'Indica el importe' });
+        const v = round2(num(d.amount));
+        const amount = d.mode === 'fijar' ? round2(v - bal) : d.mode === 'restar' ? -Math.abs(v) : Math.abs(v);
+        if (!amount) {
+          s.close();
+          return toast('Sin cambios');
+        }
+        const note = d.note.trim() || (d.mode === 'fijar' ? `Saldo fijado en ${money(v)}` : '');
+        state.gestorAdjust.push({ id: uid(), gid, date: d.date || ctx.date, ts: Date.now(), amount, note });
+        commit();
+        s.close();
+        toast('Deuda ajustada');
       },
     },
   });
@@ -1245,11 +1368,12 @@ export function weekSheet(ws = null) {
           <div><b>${fmtDate(w.ws)} – ${fmtDate(w.we)}</b><span>Lunes a domingo · se paga el lunes ${fmtDate(addDays(w.we, 1))}</span></div>
           <button class="icon-btn" data-act="next">${icon('chevR')}</button>
         </div>
-        <div class="stats3">
-          <div><span>Ventas</span><b>${w.count}</b></div>
+        <div class="stats3" style="margin-top:8px">
           <div><span>Cobrado</span><b>${money(w.total)}</b></div>
-          <div><span>Extra dueños</span><b>${money(w.ownerExtra)}</b></div>
+          <div class="acc-duenos"><span>Dueños</span><b>${money(w.owners)}</b></div>
+          <div class="acc-caja"><span>Caja</span><b>${money(w.caja)}</b></div>
         </div>
+        <div class="sec-f">${w.count} venta${w.count === 1 ? '' : 's'}${w.discount ? ` · rebajas y combos: ${money(w.discount)}` : ''}</div>
         ${section('Gestores · a entregar', w.gestores.length ? w.gestores.map((x) => navRow('pay', esc(x.g.name), {
           sub: `Semana: ${money(x.week)}${x.paidWeek ? ` · pagado: ${money(x.paidWeek)}` : ''}`,
           right: x.balance > 0 ? `<b class="orange">${money(x.balance)}</b>` : `<span class="ok">${icon('check')} Al día</span>`,
@@ -1280,16 +1404,12 @@ export function weekSheet(ws = null) {
       payAll: async () => {
         const w = weekSummary(d.ws);
         const pending = w.gestores.filter((x) => x.balance > 0);
-        const from = await actionSheet({
-          title: 'Registrar todos los pagos',
-          message: `${pending.length} gestores · ${money(pending.reduce((a, x) => a + x.balance, 0))}. ¿Sale de alguna caja?`,
-          actions: [{ label: 'No descontar de caja', value: 'none' }, ...state.warehouses.map((x) => ({ label: `Caja ${x.name}`, value: x.id }))],
-        });
+        const from = await pickSource('Registrar todos los pagos', `${pending.length} gestores · ${money(pending.reduce((a, x) => a + x.balance, 0))}. ¿De dónde sale el dinero?`);
         if (!from) return;
         for (const x of pending) {
-          const p = { id: uid(), gid: x.g.id, date: ctx.date, ts: Date.now(), amount: x.balance, note: `Liquidación ${fmtDate(w.ws)}–${fmtDate(w.we)}`, cashWh: from === 'none' ? null : from, week: d.ws };
+          const p = { id: uid(), gid: x.g.id, date: ctx.date, ts: Date.now(), amount: x.balance, note: `Liquidación ${fmtDate(w.ws)}–${fmtDate(w.we)}`, cashWh: from.wh, account: from.account, week: d.ws };
           state.gestorPayments.push(p);
-          if (p.cashWh) state.cash.push({ id: uid(), date: p.date, ts: p.ts, wh: p.cashWh, amount: -p.amount, type: 'pago_gestor', note: x.g.name, ref: p.id });
+          moneyOut({ wh: p.cashWh, account: p.account, amount: p.amount, date: p.date, type: 'pago_gestor', note: x.g.name, ref: p.id });
         }
         commit();
         toast('Pagos registrados');
@@ -1303,14 +1423,11 @@ export function weekSheet(ws = null) {
           state.asesorPayments = state.asesorPayments.filter((p) => p !== a.paid);
           state.cash = state.cash.filter((c) => c.ref !== a.paid.id);
         } else {
-          const from = await actionSheet({
-            title: `Pagar ${money(a.commission)} a ${name}`,
-            actions: [{ label: 'Marcar como pagado', value: 'none' }, ...state.warehouses.map((x) => ({ label: `Pagado de la caja ${x.name}`, value: x.id }))],
-          });
+          const from = await pickSource(`Pagar ${money(a.commission)} a ${name}`, '¿De dónde sale el dinero?');
           if (!from) return;
           const p = { id: uid(), week: d.ws, asesor: name, amount: a.commission, date: ctx.date };
           state.asesorPayments.push(p);
-          if (from !== 'none') state.cash.push({ id: uid(), date: ctx.date, ts: Date.now(), wh: from, amount: -a.commission, type: 'pago_asesor', note: name, ref: p.id });
+          moneyOut({ wh: from.wh, account: from.account, amount: a.commission, date: ctx.date, type: 'pago_asesor', note: name, ref: p.id });
         }
         commit();
       },
@@ -1318,6 +1435,23 @@ export function weekSheet(ws = null) {
       share: () => shareText(buildWeekly(d.ws)),
     },
   });
+}
+
+/** Menú para elegir de qué cuenta sale un pago → {wh, account} (ambos null si no se descuenta) o null si se cancela. */
+async function pickSource(title, message) {
+  const v = await actionSheet({
+    title,
+    message,
+    actions: [
+      ...state.warehouses.map((x) => ({ label: `Caja ${x.name}`, value: `caja:${x.id}` })),
+      ...state.warehouses.map((x) => ({ label: `Dueños ${x.name}`, value: `duenos:${x.id}` })),
+      { label: 'No descontar dinero', value: 'none' },
+    ],
+  });
+  if (!v) return null;
+  if (v === 'none') return { wh: null, account: null };
+  const [account, whId] = v.split(':');
+  return { wh: whId, account };
 }
 
 /* ======================= Ajustes ======================= */
@@ -1342,7 +1476,8 @@ export function settingsSheet() {
           ${field('Moneda', inp('settings.currency', S.currency, 'placeholder="USD"'))}`, 'La comisión de asesores se calcula cada semana (lunes a domingo).')}
         ${section('Texto del cierre', `
           <div class="row"><span class="grow">Incluir nº de vale</span>${toggle('settings.closeShowVale', S.closeShowVale)}</div>
-          <div class="row"><span class="grow">Incluir importe de cada venta</span>${toggle('settings.closeShowMoney', S.closeShowMoney)}</div>`)}
+          <div class="row"><span class="grow">Incluir importe de cada venta</span>${toggle('settings.closeShowMoney', S.closeShowMoney)}</div>
+          <div class="row"><span class="grow">Incluir dinero de los dueños</span>${toggle('settings.closeShowOwners', S.closeShowOwners)}</div>`)}
         ${section('Copia de seguridad', `
           ${btnRow('export', 'Exportar copia de seguridad', { ic: 'upload' })}
           ${btnRow('importBackup', 'Restaurar copia de seguridad', { ic: 'download' })}`,
@@ -1534,7 +1669,35 @@ export function welcomeSheet() {
     state.settings.asesor = d.name.trim() || state.settings.asesor;
     rememberAsesor(state.settings.asesor);
     state.settings.onboarded = true;
+    state.settings.seenVersion = APP_VERSION;
     commit();
     s.close();
   }
+}
+
+/* ======================= Novedades de la versión ======================= */
+export function whatsNewSheet() {
+  openSheet({
+    title: 'Novedades',
+    left: null,
+    right: { label: 'Entendido', act: 'done', bold: true },
+    dismissable: false,
+    render: () => `
+      <div class="welcome-hero" style="padding-top:8px"><h1 style="font-size:26px">Versión ${APP_VERSION}</h1><p>Tus datos anteriores se han conservado.</p></div>
+      <div class="features">
+        <div>${icon('wallet')}<span><b>Dinero de los dueños y de la caja</b>Cada venta se reparte: el precio de la empresa es para los dueños y el sobreprecio, con las comisiones de los gestores, va a la caja. Los gestores se pagan desde la caja. Cada almacén tiene las dos cuentas y puedes anotar gastos, ingresos y arqueos en cualquiera.</span></div>
+        <div>${icon('tag')}<span><b>Rebajas y combos</b>Si cobras menos que el precio de la empresa, la venta muestra la rebaja y la asumen los dueños. Cambiar un precio del catálogo no modifica ventas pasadas.</span></div>
+        <div>${icon('people')}<span><b>Deudas anteriores de gestores</b>En la ficha de cada gestor, “Ajustar deuda” permite sumar lo que ya se le debía o fijar el total.</span></div>
+        <div>${icon('doc')}<span><b>Cierre</b>Las comisiones muestran a todos los gestores con dinero pendiente, también de días anteriores, y se añade el dinero de los dueños.</span></div>
+      </div>
+      <div class="note-card">${icon('alert')}<span>Como ahora el dinero se separa en dos cuentas, los saldos se recalculan con todas tus ventas. Revisa cada almacén en <b>Hoy → Dinero</b> y usa <b>Arqueo</b> en la caja y en dueños para dejarlos con las cantidades reales.</span></div>
+      <div class="spacer"></div>`,
+    acts: {
+      done: (el, ev, s) => {
+        state.settings.seenVersion = APP_VERSION;
+        commit();
+        s.close();
+      },
+    },
+  });
 }

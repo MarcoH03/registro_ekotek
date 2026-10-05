@@ -1,7 +1,7 @@
 // Generación de textos: cierre general diario y liquidación semanal.
 import {
-  state, fmtDate, money, num, stockMap, cashMap, activeSales, saleCalc, productName,
-  gestorName, gestorDay, hasIncident, openIncidents, itemsSummary, weekSummary, plainNum,
+  state, fmtDate, money, num, stockMap, moneyMap, activeSales, saleCalc, productName,
+  gestorName, gestorDay, gestorStats, hasIncident, openIncidents, itemsSummary, weekSummary, plainNum, round2,
 } from './store.js';
 
 export const SEP = '------------------------------------';
@@ -61,22 +61,18 @@ export function buildClosure(date) {
   }
   out.push(SEP, '');
 
-  const cash = cashMap(date);
+  const money_ = moneyMap(date);
   for (const w of state.warehouses) {
-    out.push(`💵 DINERO EN CAJA ${(w.stockTitle || w.name).toUpperCase()}`, '', money(cash[w.id] || 0), '', SEP, '');
+    out.push(`💵 DINERO EN CAJA ${(w.stockTitle || w.name).toUpperCase()}`, '', money(money_[w.id]?.caja || 0), '', SEP, '');
+  }
+  if (S.closeShowOwners) {
+    out.push('💼 DINERO DE LOS DUEÑOS', '');
+    for (const w of state.warehouses) out.push(`${(w.stockTitle || w.name).toUpperCase()}: ${money(money_[w.id]?.duenos || 0)}`);
+    out.push('', SEP, '');
   }
 
   out.push('💳 COMISIONES');
-  const comm = gestorDay(date);
-  if (!comm.length) out.push('NINGUNA');
-  for (const c of comm) {
-    const amounts = c.amounts.map(plainNum);
-    out.push(
-      amounts.length > 1
-        ? `${gestorName(c.gid)}: ${amounts.join(' + ')} = ${plainNum(c.total)} ${cur}`
-        : `${gestorName(c.gid)}: ${amounts[0]} ${cur}`,
-    );
-  }
+  out.push(...commissionLines(date, cur));
   out.push('', '', SEP, '');
 
   out.push('📋 LISTADO DE COMPRAS ANTICIPADAS ', '#| Cliente| Cantidad / Equipos');
@@ -106,7 +102,9 @@ export function buildWeekly(ws) {
   const out = [];
   out.push('💳 *LIQUIDACIÓN SEMANAL*', '', `📅 Semana del ${fmtDate(w.ws)} al ${fmtDate(w.we)}`, '');
   out.push(`🧑‍🧒 Asesor: ${state.settings.asesor || ''}`, '', SEP, '');
-  out.push(`💰 Ventas de la semana: ${w.count}`, `Total cobrado: ${money(w.total)}`, `Sobreprecio para los dueños: ${money(w.ownerExtra)}`, '', SEP, '');
+  out.push(`💰 Ventas de la semana: ${w.count}`, `Total cobrado: ${money(w.total)}`, `Para los dueños: ${money(w.owners)}`, `Para la caja: ${money(w.caja)}`);
+  if (w.discount) out.push(`Rebajas y combos: ${money(w.discount)}`);
+  out.push('', SEP, '');
   out.push('👥 GESTORES (a entregar el lunes)');
   const pay = w.gestores.filter((x) => x.balance > 0);
   if (!pay.length) out.push('NINGUNO');
@@ -122,4 +120,26 @@ export function buildWeekly(ws) {
   return out.join('\n');
 }
 
-const round = (n) => Math.round(n * 100) / 100;
+const round = round2;
+
+/**
+ * Gestores a los que se les debe dinero a la fecha del cierre, aunque la comisión sea de días anteriores.
+ * Primero los que ganaron comisión ese día; los que ya cobraron todo no aparecen.
+ */
+export function commissionLines(date, cur = state.settings.currency || 'USD') {
+  const today = new Map(gestorDay(date).map((e) => [e.gid, e]));
+  const order = [...today.keys(), ...[...state.gestores].sort((a, b) => a.name.localeCompare(b.name, 'es')).map((g) => g.id).filter((id) => !today.has(id))];
+  const lines = [];
+  for (const gid of order) {
+    const bal = gestorStats(gid, null, date).balance;
+    if (bal <= 0) continue;
+    const t = today.get(gid);
+    const prev = t ? round(bal - t.total) : 0;
+    const hoy = t ? t.amounts.map(plainNum).join(' + ') : '';
+    if (!t) lines.push(`${gestorName(gid)}: ${plainNum(bal)} ${cur}`);
+    else if (prev > 0) lines.push(`${gestorName(gid)}: ${plainNum(bal)} ${cur} (anterior ${plainNum(prev)} + hoy ${hoy})`);
+    else if (prev === 0 && t.amounts.length > 1) lines.push(`${gestorName(gid)}: ${hoy} = ${plainNum(bal)} ${cur}`);
+    else lines.push(`${gestorName(gid)}: ${plainNum(bal)} ${cur}`);
+  }
+  return lines.length ? lines : ['NINGUNA'];
+}

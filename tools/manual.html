@@ -57,7 +57,7 @@
   <h1>Registro Ekotek</h1>
   <div class="sub">Manual de uso de la web app del asesor de turno</div>
   <p style="max-width:140mm">Ventas con vale, inventario de los dos almacenes, comisiones de gestores y asesores, dinero en caja e incidencias, y el <b>cierre general</b> listo para enviar por WhatsApp. Funciona sin internet y guarda todo en el iPhone.</p>
-  <div class="meta">Versión 1.0 · Dirección de la app: <b>https://marcoh03.github.io/registro_ekotek/</b></div>
+  <div class="meta">Versión 1.1 · Dirección de la app: <b>https://marcoh03.github.io/registro_ekotek/</b></div>
 </div>
 
 <section style="break-before:auto">
@@ -75,7 +75,7 @@
     <li>¿Dónde buscar? (almacén más conveniente)</li>
     <li>Entradas, traslados, salidas y ajustes</li>
     <li>Importar el stock desde un cierre</li>
-    <li>Dinero en caja</li>
+    <li>Dinero: caja y dueños</li>
     <li>Incidencias</li>
     <li>Gestores y sus pagos</li>
     <li>Liquidación semanal (domingo y lunes)</li>
@@ -121,8 +121,8 @@
   <ul>
     <li><b>Productos repetidos.</b> En los cierres a veces el mismo producto se escribe distinto (“Bluebety” y “Bluetty”, “Dji 1000 V2” y “DJI Power 1000 V2”). Abre uno de ellos en Inventario y usa <span class="k">Fusionar con otro producto</span>: se unen el stock y el historial, y el nombre viejo se recuerda para futuras importaciones.</li>
     <li><b>Precios.</b> En <i>Ajustes → Catálogo de productos</i> toca cada producto y escribe el <b>precio de la empresa</b> (sin comisión). También se puede poner al registrar la primera venta de ese producto: si el precio estaba vacío, se guarda solo.</li>
-    <li><b>Gestores.</b> No hace falta darlos de alta antes: se crean al registrar una venta (botón “Nuevo gestor”) o desde la pestaña Gestores con <span class="k">+</span>.</li>
-    <li><b>Dinero inicial en caja.</b> Abre cada caja desde Hoy y usa <span class="k">Arqueo</span> para escribir lo que hay contado. Ver el capítulo 13.</li>
+    <li><b>Gestores.</b> Se crean al registrar una venta (botón “Nuevo gestor”) o desde la pestaña Gestores con <span class="k">+</span>. Si a un gestor ya se le debía dinero de antes, escríbelo en “Ya se le debía” o usa <span class="k">Ajustar deuda</span> en su ficha (capítulo 15).</li>
+    <li><b>Dinero inicial.</b> Abre cada almacén en <i>Hoy → Dinero</i> y usa <span class="k">Arqueo</span> en la cuenta de la caja y en la de los dueños para escribir lo que hay. Ver el capítulo 13.</li>
   </ul>
   </div></div>
 </section>
@@ -137,9 +137,9 @@
   <ul>
     <li><b>Fecha de trabajo</b> (botón azul con el calendario): todo lo que registres usa esta fecha. Si el turno pasa de medianoche puedes seguir con la fecha del día anterior; la app muestra un aviso con el botón “Volver a hoy”.</li>
     <li><b>Accesos rápidos</b>: Nueva venta, ¿Dónde buscar?, Conteo, Incidencia, Traslado y Cierre.</li>
-    <li><b>Resumen del día</b>: número de ventas, total cobrado, comisiones de gestores y lo que corresponde a los dueños.</li>
+    <li><b>Resumen del día</b>: total cobrado y cómo se reparte: lo que es de los <b>dueños</b> (azul) y lo que va a la <b>caja</b> (turquesa), que incluye las comisiones de los gestores. Si hubo rebajas o combos también se indica.</li>
     <li><b>Revisión de inventario</b>: indica si ya contaste cada almacén hoy (✓ con la hora) o si está pendiente.</li>
-    <li><b>Dinero en caja</b> de cada almacén. Tócalo para ver movimientos o registrar entregas, gastos y arqueos.</li>
+    <li><b>Dinero</b> de cada almacén: el saldo de la caja y el de los dueños. Tócalo para ver los movimientos o anotar entregas, gastos, ingresos y arqueos.</li>
     <li><b>Ventas del día</b>, y en <b>Seguimiento</b>: incidencias abiertas, compras anticipadas pendientes y la liquidación semanal.</li>
   </ul>
   <p>Los domingos aparece un aviso morado para preparar la liquidación semanal, y si hace más de 7 días que no exportas una copia de seguridad aparece un aviso naranja.</p>
@@ -179,8 +179,10 @@
   <div class="split left"><figure><img src="../preview/03-elegir-producto.png"><figcaption>Buscador de productos con el stock de cada almacén.</figcaption></figure><div class="txt">
   <ul>
     <li><b>Cobrado al cliente</b>: lo que pagó realmente el cliente. Si lo dejas vacío se usa el precio de la empresa.</li>
-    <li><b>Método</b>: Efectivo, Transferencia o Mixto (en Mixto escribes cuánto fue en efectivo). Solo el efectivo entra en la caja. Puedes elegir en qué caja entra.</li>
-    <li><b>Comisión de gestores</b>: <span class="k">Añadir gestor</span>, elige o crea el gestor y escribe su comisión. Al añadir el primero, la app propone todo el sobreprecio; cámbialo si al gestor le toca menos. Se pueden poner varios gestores en la misma venta.</li>
+    <li><b>Método</b>: Efectivo, Transferencia o Mixto (en Mixto escribes cuánto fue en efectivo). Es informativo: se ve en el detalle de la venta.</li>
+    <li><b>Almacén donde se anota el dinero</b>: a qué almacén suman la parte de los dueños y la de la caja (por defecto, el de la venta).</li>
+    <li><b>Comisión de gestores</b>: <span class="k">Añadir gestor</span>, elige o crea el gestor y escribe su comisión. La app propone el sobreprecio que queda libre; cámbialo si al gestor le toca menos. Se pueden poner varios gestores en la misma venta.</li>
+    <li><b>Para la caja</b>: se calcula solo (ver capítulo 6), pero puedes escribir otra cantidad.</li>
     <li><b>Cliente</b>: nombre, teléfono, municipio (ayuda a elegir almacén) y dirección en mensajería.</li>
     <li><b>Otros</b>: el asesor (por defecto tú) y notas libres.</li>
   </ul>
@@ -191,20 +193,22 @@
 <section>
   <h2><span class="n">6</span>Cómo se reparte el dinero de una venta</h2>
   <div class="split"><div class="txt">
-  <p>Mientras escribes, el bloque <b>Reparto del dinero</b> se actualiza solo:</p>
+  <p>Todo lo que paga el cliente se reparte en dos partes: <b>dueños</b> y <b>caja</b>. Las comisiones de los gestores van a la caja y se les pagan desde ella. Mientras escribes, el bloque <b>Reparto del dinero</b> se actualiza solo:</p>
   <table>
     <tr><th>Concepto</th><th>Cómo se calcula</th></tr>
     <tr><td>Precio de la empresa</td><td>Cantidad × precio unitario de cada producto</td></tr>
     <tr><td>Cobrado al cliente</td><td>Lo que pagó el cliente</td></tr>
-    <tr><td>Sobreprecio (extra)</td><td>Cobrado − precio de la empresa</td></tr>
-    <tr><td>Comisión de gestores</td><td>Suma de lo anotado para cada gestor</td></tr>
-    <tr><td>Extra para los dueños</td><td>Sobreprecio − comisión de gestores</td></tr>
-    <tr><td><b>Total para los dueños</b></td><td>Cobrado − comisión de gestores</td></tr>
+    <tr><td>Sobreprecio</td><td>Cobrado − precio de la empresa</td></tr>
+    <tr><td>Comisión de gestores</td><td>Lo que se le debe a cada gestor; se paga desde la caja</td></tr>
+    <tr><td><b>Para la caja</b></td><td>Todo el sobreprecio (si la comisión es mayor, la comisión)</td></tr>
+    <tr><td><b>Para los dueños</b></td><td>Cobrado − caja (normalmente, el precio de la empresa)</td></tr>
   </table>
   <p><b>Ejemplo.</b> Una Oupes Mega 2 cuesta $820. El gestor Ernesto se la vendió al cliente por $860 y a él le tocan $25:</p>
-  <span class="formula">Sobreprecio = 860 − 820 = $40 · Extra dueños = 40 − 25 = $15 · Total dueños = 860 − 25 = $835</span>
-  <p>Los $25 se suman a la cuenta de Ernesto (se le pagan en la liquidación semanal) y aparecen en el cierre en “💳 COMISIONES”. Si un mismo gestor tiene varias ventas en el día, el cierre lo muestra así: <i>“Yoel: 5 + 5 = 10 USD”</i>.</p>
-  <div class="note"><b>¿Y si la comisión la paga la empresa?</b>Si el cliente pagó el precio normal pero al gestor le corresponde comisión, anótala igual. El sobreprecio será 0, el “extra para los dueños” saldrá negativo y el total para los dueños será el precio menos la comisión.</div>
+  <span class="formula">Sobreprecio = 860 − 820 = $40 → Caja = $40 · Dueños = 860 − 40 = $820</span>
+  <p>Los $40 entran en la caja y los $820 en la cuenta de los dueños del almacén de la venta. Además se anotan $25 en la cuenta de Ernesto: cuando se le pagan desde la caja, a la caja le quedan $15.</p>
+  <div class="note"><b>Rebajas y combos</b>Si cobras menos que el precio de la empresa (por ejemplo, 4 paneles de $160 en combo por $600), escribe lo cobrado: la venta muestra “Rebaja / combo −$40”, la caja recibe 0 y la rebaja sale de la parte de los dueños ($600). También puedes cambiar el “Precio u.” de cada producto solo en esa venta.</div>
+  <div class="note"><b>Si la comisión supera el sobreprecio</b>La caja recibe la comisión completa, para poder pagarla, y la diferencia sale de la parte de los dueños. Si en algún caso el reparto es distinto, escribe a mano la cantidad “Para la caja”.</div>
+  <div class="tip"><b>Cambiar precios no altera el pasado</b>Cada venta guarda el precio con el que se hizo. Si cambias el precio de un producto en el catálogo, solo se usa en las ventas nuevas.</div>
   </div><figure><img src="../preview/05-nueva-venta-reparto.png"><figcaption>Bloque “Reparto del dinero” del formulario.</figcaption></figure></div>
 </section>
 
@@ -300,19 +304,22 @@
 </section>
 
 <section>
-  <h2><span class="n">13</span>Dinero en caja</h2>
+  <h2><span class="n">13</span>Dinero: caja y dueños</h2>
   <div class="split"><div class="txt">
-  <p>Cada almacén tiene su caja. Se abre desde <b>Hoy → Dinero en caja</b>. El saldo se calcula así:</p>
-  <span class="formula">Caja = efectivo de las ventas + ingresos − entregas a los dueños − gastos − pagos hechos desde la caja ± arqueos</span>
+  <p>Cada almacén lleva dos cuentas, que se abren desde <b>Hoy → Dinero</b>:</p>
   <ul>
-    <li>El <b>efectivo de las ventas</b> entra solo (las transferencias no).</li>
-    <li><span class="k">Entrega a dueños</span>: el dinero que se entrega a los jefes.</li>
-    <li><span class="k">Gasto</span>: transporte, materiales…</li>
-    <li><span class="k">Ingreso</span>: dinero que entra sin ser una venta.</li>
-    <li><span class="k">Arqueo</span>: escribe lo que hay contado. Si no coincide, la app registra la diferencia y ofrece crear una incidencia (“faltan $5”). Úsalo también para poner el saldo inicial.</li>
+    <li><b>Caja</b>: el sobreprecio de las ventas, incluidas las comisiones de los gestores, menos lo que ya se les pagó. Es lo que sale en el cierre como “DINERO EN CAJA”. Debajo se indica cuánto se les debe todavía a los gestores.</li>
+    <li><b>Dueños</b>: el dinero de los productos que todavía no se ha entregado a los dueños.</li>
   </ul>
-  <p>El cierre muestra el dinero en caja de cada almacén al final del día del cierre. Para borrar un movimiento manual, tócalo en la lista.</p>
-  </div><figure><img src="../preview/15-caja.png"><figcaption>Caja de La Lisa con sus movimientos.</figcaption></figure></div>
+  <span class="formula">Saldo = lo que aportan las ventas + ingresos − gastos − entregas − pagos que salieron de esa cuenta ± arqueos</span>
+  <ul>
+    <li><span class="k">Entrega a dueños</span>: dinero entregado a los jefes; resta de la cuenta de los dueños.</li>
+    <li><span class="k">Gasto</span> e <span class="k">Ingreso</span>: eliges si se anota en la caja o en los dueños.</li>
+    <li><span class="k">Arqueo</span>: eliges la cuenta y escribes lo que hay. Si no coincide, se anota la diferencia y se ofrece crear una incidencia. Úsalo también para poner el saldo inicial.</li>
+    <li>El filtro <b>Todo / Caja / Dueños</b> muestra los movimientos de cada cuenta; para borrar uno manual, tócalo.</li>
+  </ul>
+  <p>Los pagos a gestores salen de la caja (es la opción por defecto); también puedes elegir los dueños o no descontar. Igual con la comisión de los asesores.</p>
+  </div><figure><img src="../preview/15-caja.png"><figcaption>Dinero de La Lisa: caja, dueños y movimientos.</figcaption></figure></div>
 </section>
 
 <section>
@@ -334,13 +341,16 @@
     <figure><img src="../preview/17-gestores.png"><figcaption>Lista de gestores con lo que se les debe.</figcaption></figure>
     <figure><img src="../preview/18-gestor.png"><figcaption>Cuenta de un gestor.</figcaption></figure>
   </div>
+  <div class="split left"><figure><img src="../preview/25-ajustar-deuda.png"><figcaption>Ajustar lo que se le debe a un gestor.</figcaption></figure><div class="txt">
   <p>La pestaña <b>Gestores</b> muestra cada gestor con lo que se le debe (en naranja) o “Al día”. Un gestor puede tener nombre, número o ambos (por ejemplo “55507788 Yanet Gil”).</p>
   <ul>
-    <li>La cuenta de un gestor muestra <b>Ganado</b> (todas sus comisiones), <b>Pagado</b> y <b>Pendiente</b>, y el historial de cada comisión (con su vale) y cada pago.</li>
-    <li><span class="k">Registrar pago</span>: importe (propone lo pendiente), fecha y si sale de una caja (se descuenta de esa caja).</li>
+    <li>La cuenta de un gestor muestra <b>Ganado</b> (sus comisiones y deudas anteriores), <b>Pagado</b> y <b>Pendiente</b>, y el historial de cada comisión (con su vale), ajuste y pago.</li>
+    <li><span class="k">Registrar pago</span>: importe (propone lo pendiente), fecha y de dónde sale el dinero: por defecto, la caja del almacén que elijas.</li>
+    <li><span class="k">Ajustar deuda</span>: para lo que ya se le debía antes de usar la app o para corregir. <b>Sumar</b> añade dinero a lo pendiente, <b>Restar</b> lo quita sin registrar un pago y <b>Fijar total</b> deja lo pendiente en la cantidad exacta que escribas. Se guarda con fecha y motivo, y se puede borrar tocándolo en el historial.</li>
     <li><span class="k">Llamar</span> y <span class="k">WhatsApp</span> abren directamente la llamada o el chat (a los números de 8 cifras se les añade el prefijo 53).</li>
     <li>Para borrar un pago hecho por error, tócalo en el historial.</li>
   </ul>
+  </div></div>
 </section>
 
 <section>
@@ -374,8 +384,8 @@
     <li>Encabezado con fecha y asesor.</li>
     <li>Por cada punto de venta (KHOLY, LISA): <b>Recogidas</b>, <b>Mensajerías</b> y <b>Compras anticipadas</b> del día.</li>
     <li><b>EN STOCK</b> de cada almacén al final del día, con “(Incidencia)” donde corresponda.</li>
-    <li><b>DINERO EN CAJA</b> de cada almacén.</li>
-    <li><b>COMISIONES</b> de los gestores del día.</li>
+    <li><b>DINERO EN CAJA</b> de cada almacén y <b>DINERO DE LOS DUEÑOS</b> (se puede quitar en Ajustes).</li>
+    <li><b>COMISIONES</b>: todos los gestores a los que se les debe dinero, aunque sea de días anteriores. Los que ya cobraron todo no aparecen. Ejemplos: “Ernesto: 28 USD”, “Yoel: 5 + 5 = 10 USD”, “Ana: 50 USD (anterior 25 + hoy 25)”.</li>
     <li><b>LISTADO DE COMPRAS ANTICIPADAS</b> pendientes de entregar: vale | cliente | equipos.</li>
     <li><b>INCIDENCIAS</b>.</li>
   </ol>
@@ -404,7 +414,7 @@
     <li><b>Municipios y cercanía</b>: almacén más cercano para cada lugar.</li>
     <li><b>Importar stock desde un cierre</b>.</li>
     <li><b>Comisiones</b>: porcentaje de asesores, base de cálculo y moneda.</li>
-    <li><b>Texto del cierre</b>: incluir número de vale e importe.</li>
+    <li><b>Texto del cierre</b>: incluir número de vale, importe de cada venta y dinero de los dueños.</li>
     <li><b>Copia de seguridad</b>: exportar y restaurar.</li>
     <li><b>Ayuda</b>: este manual y la versión de la app.</li>
     <li><b>Borrar todos los datos</b>: pide escribir BORRAR para confirmar.</li>
@@ -424,6 +434,8 @@
   <p>La copia también sirve para pasar la información a otro asesor: él restaura tu copia en su iPhone y sigue desde ahí.</p>
 
   <h2 style="margin-top:9mm"><span class="n">20</span>Preguntas frecuentes</h2>
+  <h3>Al actualizar la app, ¿pierdo los datos?</h3>
+  <p>No. Los datos siguen en el iPhone y las copias de seguridad de versiones anteriores se pueden restaurar. Tras actualizar a la versión 1.1, revisa el dinero de cada almacén y haz un arqueo de la caja y de los dueños, porque ahora el dinero se separa en dos cuentas.</p>
   <h3>¿Necesito internet?</h3>
   <p>Solo la primera vez para instalarla y cuando haya actualizaciones. Todo lo demás funciona sin conexión. El manual en PDF sí necesita internet para abrirse desde la app.</p>
   <h3>Me equivoqué en una venta.</h3>
@@ -432,6 +444,8 @@
   <p>Mira el historial en la ficha del producto para ver qué movimiento lo cambió. Corrígelo con un conteo o un ajuste; si la diferencia es real, deja la incidencia.</p>
   <h3>Un producto sale con dos nombres distintos.</h3>
   <p>Ábrelo en Inventario y usa <span class="k">Fusionar con otro producto</span>.</p>
+  <h3>A un gestor ya se le debía dinero antes de empezar a usar la app.</h3>
+  <p>En su ficha toca <span class="k">Ajustar deuda</span> → Sumar, y escribe lo que se le debía.</p>
   <h3>Un gestor cobró parte de la comisión por adelantado.</h3>
   <p>Registra un pago en su cuenta con ese importe; la liquidación del domingo restará lo ya pagado.</p>
   <h3>Hice el cierre y después registré otra venta.</h3>

@@ -1,7 +1,7 @@
 // Estado de la aplicación, persistencia local y cálculos derivados.
 // Todo se guarda en localStorage del dispositivo; nada sale del iPhone.
 
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.0';
 const KEY = 'ekotek-registro-v1';
 
 /* ---------- utilidades ---------- */
@@ -73,7 +73,7 @@ export const MUNICIPIOS_DEFAULT = [
 
 export function defaultState() {
   return {
-    version: 1,
+    version: 2,
     settings: {
       asesor: '',
       asesores: [],
@@ -82,7 +82,9 @@ export function defaultState() {
       currency: 'USD',
       closeShowVale: false,
       closeShowMoney: false,
+      closeShowOwners: true,
       onboarded: false,
+      seenVersion: '',
       lastBackup: null,
     },
     warehouses: [
@@ -94,8 +96,9 @@ export function defaultState() {
     movements: [], // {id, ts, date, type, wh, pid, qty, ref, group, note}
     sales: [], // ver saleCalc
     gestores: [], // {id, name, phone, notes}
-    gestorPayments: [], // {id, gid, date, ts, amount, note, cashWh, week}
-    cash: [], // {id, date, ts, wh, amount, type, note, ref}
+    gestorPayments: [], // {id, gid, date, ts, amount, note, cashWh, account, week}
+    gestorAdjust: [], // {id, gid, date, ts, amount, note} deudas anteriores y correcciones
+    cash: [], // {id, date, ts, wh, account: 'caja'|'duenos', amount, type, note, ref}
     incidents: [], // {id, date, ts, wh, pid, text, status, resolvedDate}
     counts: [], // {id, date, ts, wh, diffs}
     closures: [], // {id, date, ts, text}
@@ -107,6 +110,8 @@ function migrate(s) {
   const d = defaultState();
   for (const k of Object.keys(d)) if (s[k] === undefined) s[k] = d[k];
   s.settings = { ...d.settings, ...s.settings };
+  // v1 → v2: los movimientos de dinero sin cuenta se leen con accountOf(); no hace falta reescribirlos.
+  s.version = d.version;
   return s;
 }
 
@@ -217,23 +222,40 @@ export function hasIncident(whId, pid, upTo = null) {
 }
 
 /* ---------- ventas ---------- */
+/**
+ * Reparto de una venta: cobrado = dueños + caja.
+ * Los dueños reciben el precio de la empresa y la caja todo el sobreprecio, incluidas las
+ * comisiones de los gestores, que luego se les pagan desde la caja. Si la comisión supera
+ * el sobreprecio, la caja recibe al menos la comisión y la diferencia sale de los dueños;
+ * en una rebaja o combo (cobrado < precio) la asumen los dueños. `cajaManual` fija otra cantidad.
+ * Cada venta guarda sus propios precios: cambiar el catálogo no altera ventas pasadas.
+ */
 export function saleCalc(s) {
-  const base = sum(s.items || [], (it) => num(it.qty) * num(it.price));
-  const total = num(s.total);
-  const gest = sum(s.gestores || [], (g) => g.amount);
+  const base = round2(sum(s.items || [], (it) => num(it.qty) * num(it.price)));
+  const total = round2(num(s.total));
+  const gest = round2(sum(s.gestores || [], (g) => g.amount));
+  const cajaAuto = round2(Math.max(0, total - base, gest));
+  const manual = s.cajaManual !== undefined && s.cajaManual !== null && s.cajaManual !== '';
+  const caja = manual ? round2(num(s.cajaManual)) : cajaAuto;
   const cash = s.payMethod === 'efectivo' ? total : s.payMethod === 'mixto' ? Math.min(num(s.cashAmount), total) : 0;
   return {
-    base: round2(base),
-    total: round2(total),
+    base,
+    total,
     extra: round2(total - base),
-    gest: round2(gest),
-    owners: round2(total - gest),
-    ownerExtra: round2(total - base - gest),
+    gest,
+    caja,
+    cajaAuto,
+    cajaManual: manual,
+    owners: round2(total - caja),
+    discount: round2(Math.max(0, base - total)),
     cash: round2(cash),
   };
 }
 
 export const activeSales = () => state.sales.filter((s) => !s.void);
+
+/** Almacén donde se anota el dinero de la venta. */
+export const saleWh = (s) => s.cashWh || s.wh;
 
 export function itemsSummary(items, sep = ', ') {
   return (items || []).map((it) => `${num(it.qty)} ${productName(it.pid)}`).join(sep);
@@ -244,27 +266,26 @@ export function asesorBaseOf(s) {
   return state.settings.asesorBase === 'empresa' ? c.base : c.total;
 }
 
-/* ---------- caja ---------- */
-export function cashMap(upTo = null) {
-  const m = {};
-  for (const w of state.warehouses) m[w.id] = 0;
-  for (const c of state.cash) {
-    if (upTo && c.date > upTo) continue;
-    m[c.wh] = (m[c.wh] || 0) + num(c.amount);
+/** Suma el reparto de varias ventas. */
+export function salesTotals(sales) {
+  const t = { count: 0, total: 0, base: 0, gest: 0, caja: 0, owners: 0, discount: 0 };
+  for (const s of sales) {
+    if (s.void) continue;
+    const c = saleCalc(s);
+    t.count++;
+    for (const k of ['total', 'base', 'gest', 'caja', 'owners', 'discount']) t[k] += c[k];
   }
-  for (const s of activeSales()) {
-    if (upTo && s.date > upTo) continue;
-    const c = saleCalc(s).cash;
-    if (c) {
-      const w = s.cashWh || s.wh;
-      m[w] = (m[w] || 0) + c;
-    }
-  }
-  for (const k in m) m[k] = round2(m[k]);
-  return m;
+  for (const k of Object.keys(t)) if (k !== 'count') t[k] = round2(t[k]);
+  return t;
 }
 
-export const CASH_TYPES = {
+/* ---------- dinero: cuentas de dueños y de caja por almacén ---------- */
+export const ACCOUNTS = { caja: 'Caja', duenos: 'Dueños' };
+
+/** Los movimientos anteriores a la versión 1.1 no tienen cuenta: las entregas son de los dueños y el resto de la caja. */
+export const accountOf = (c) => c.account || (c.type === 'entrega' ? 'duenos' : 'caja');
+
+export const MONEY_TYPES = {
   entrega: 'Entrega a los dueños',
   gasto: 'Gasto',
   ingreso: 'Ingreso',
@@ -273,14 +294,40 @@ export const CASH_TYPES = {
   pago_asesor: 'Pago a asesor',
 };
 
-export function cashEntries(whId) {
-  const list = state.cash
-    .filter((c) => c.wh === whId)
-    .map((c) => ({ date: c.date, ts: c.ts, amount: num(c.amount), label: CASH_TYPES[c.type] || c.type, note: c.note, cashId: c.id }));
+/** Saldos {wh: {caja, duenos}} hasta la fecha indicada (incluida). */
+export function moneyMap(upTo = null) {
+  const m = {};
+  const acc = (w) => (m[w] = m[w] || { caja: 0, duenos: 0 });
+  for (const w of state.warehouses) acc(w.id);
+  for (const c of state.cash) {
+    if (upTo && c.date > upTo) continue;
+    acc(c.wh)[accountOf(c)] += num(c.amount);
+  }
   for (const s of activeSales()) {
-    const c = saleCalc(s).cash;
-    if (c && (s.cashWh || s.wh) === whId) {
-      list.push({ date: s.date, ts: s.ts, amount: c, label: `Venta${s.vale ? ' · vale ' + s.vale : ''}`, note: itemsSummary(s.items), saleId: s.id });
+    if (upTo && s.date > upTo) continue;
+    const c = saleCalc(s);
+    const a = acc(saleWh(s));
+    a.caja += c.caja;
+    a.duenos += c.owners;
+  }
+  for (const k in m) {
+    m[k].caja = round2(m[k].caja);
+    m[k].duenos = round2(m[k].duenos);
+  }
+  return m;
+}
+
+export function moneyEntries(whId, account = null) {
+  const list = state.cash
+    .filter((c) => c.wh === whId && (!account || accountOf(c) === account))
+    .map((c) => ({ date: c.date, ts: c.ts, amount: num(c.amount), label: MONEY_TYPES[c.type] || c.type, note: c.note, cashId: c.id, account: accountOf(c) }));
+  for (const s of activeSales()) {
+    if (saleWh(s) !== whId) continue;
+    const c = saleCalc(s);
+    for (const [acc, amt] of [['duenos', c.owners], ['caja', c.caja]]) {
+      if (amt && (!account || account === acc)) {
+        list.push({ date: s.date, ts: s.ts, amount: amt, label: `Venta${s.vale ? ' · vale ' + s.vale : ''}`, note: itemsSummary(s.items), saleId: s.id, account: acc });
+      }
     }
   }
   return list.sort((a, b) => b.date.localeCompare(a.date) || b.ts - a.ts);
@@ -296,24 +343,28 @@ export function gestorLedger(gid) {
       }
     }
   }
+  for (const a of state.gestorAdjust) {
+    if (a.gid === gid) list.push({ date: a.date, ts: a.ts, amount: num(a.amount), label: 'Ajuste de saldo' + (a.note ? ' · ' + a.note : ''), adjId: a.id });
+  }
   for (const p of state.gestorPayments) {
     if (p.gid === gid) list.push({ date: p.date, ts: p.ts, amount: -num(p.amount), label: 'Pago entregado' + (p.note ? ' · ' + p.note : ''), payId: p.id });
   }
   return list.sort((a, b) => b.date.localeCompare(a.date) || b.ts - a.ts);
 }
 
+/** earned: comisiones de ventas · adjust: deudas anteriores y ajustes · balance: lo que se le debe. */
 export function gestorStats(gid, from = null, to = null) {
+  const inRange = (d) => !((from && d < from) || (to && d > to));
   let earned = 0;
+  let adjust = 0;
   let paid = 0;
   for (const s of activeSales()) {
-    if ((from && s.date < from) || (to && s.date > to)) continue;
+    if (!inRange(s.date)) continue;
     for (const g of s.gestores || []) if (g.gid === gid) earned += num(g.amount);
   }
-  for (const p of state.gestorPayments) {
-    if (p.gid !== gid || (from && p.date < from) || (to && p.date > to)) continue;
-    paid += num(p.amount);
-  }
-  return { earned: round2(earned), paid: round2(paid), balance: round2(earned - paid) };
+  for (const a of state.gestorAdjust) if (a.gid === gid && inRange(a.date)) adjust += num(a.amount);
+  for (const p of state.gestorPayments) if (p.gid === gid && inRange(p.date)) paid += num(p.amount);
+  return { earned: round2(earned), adjust: round2(adjust), paid: round2(paid), balance: round2(earned + adjust - paid) };
 }
 
 /** Comisiones de gestores de un día: [{gid, amounts:[...], total}] */
@@ -331,22 +382,19 @@ export function gestorDay(date) {
   return [...map.values()];
 }
 
+/** Registra un pago (a gestor o asesor) y, si sale de una cuenta, lo descuenta de ella. */
+export function moneyOut({ wh: whId, account, amount, date, type, note, ref }) {
+  if (!whId || !account) return;
+  state.cash.push({ id: uid(), date, ts: Date.now(), wh: whId, account, amount: -Math.abs(num(amount)), type, note, ref });
+}
+
 /* ---------- semana ---------- */
 export function weekSummary(ws) {
   const we = addDays(ws, 6);
   const sales = activeSales().filter((s) => s.date >= ws && s.date <= we);
   const pct = num(state.settings.asesorPct);
   const asesores = new Map();
-  let total = 0;
-  let base = 0;
-  let gest = 0;
-  let ownerExtra = 0;
   for (const s of sales) {
-    const c = saleCalc(s);
-    total += c.total;
-    base += c.base;
-    gest += c.gest;
-    ownerExtra += c.ownerExtra;
     const name = s.asesor || 'Sin asesor';
     if (!asesores.has(name)) asesores.set(name, { name, count: 0, base: 0 });
     const a = asesores.get(name);
@@ -364,11 +412,7 @@ export function weekSummary(ws) {
       return { g, week: wk.earned, paidWeek: wk.paid, balance: all.balance };
     })
     .filter((x) => x.week || x.balance || x.paidWeek);
-  return {
-    ws, we, sales, count: sales.length,
-    total: round2(total), base: round2(base), gest: round2(gest), ownerExtra: round2(ownerExtra),
-    asesores: asesorList, gestores: gestorList, pct,
-  };
+  return { ws, we, sales, ...salesTotals(sales), asesores: asesorList, gestores: gestorList, pct };
 }
 
 /* ---------- importar stock desde texto de un cierre ---------- */
