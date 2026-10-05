@@ -16,13 +16,13 @@ Web app para iPhone del **asesor de turno**: registra las ventas con su vale, de
 
 ## Funciones
 
-- **Ventas**: nº de vale, tipo (recogida, mensajería, compra anticipada), almacén, productos, cobrado al cliente, efectivo/transferencia/mixto y comisión de uno o varios gestores. Reparto automático: **dueños** (precio de la empresa), **caja** (sobreprecio que queda tras las comisiones) y **gestores**; rebajas y combos los asumen los dueños. Cada venta guarda su precio, así que cambiar el catálogo no altera ventas pasadas. Editar, anular, eliminar y marcar anticipadas como entregadas.
+- **Ventas**: nº de vale, tipo (recogida, mensajería, compra anticipada), almacén, productos, cobrado al cliente, efectivo/transferencia/mixto y comisión de uno o varios gestores. Reparto automático entre **dueños** (precio de la empresa) y **caja** (sobreprecio, incluidas las comisiones de los gestores, que se pagan desde la caja); rebajas y combos los asumen los dueños. Cada venta guarda su precio, así que cambiar el catálogo no altera ventas pasadas. Editar, anular, eliminar y marcar anticipadas como entregadas.
 - **Inventario** de Cerro y La Lisa calculado a partir de movimientos: ventas, entradas, traslados, salidas, ajustes y conteos, con historial por producto.
 - **Conteo inicial** del turno con detección de diferencias e incidencias automáticas.
 - **¿Dónde buscar?**: recomienda el almacén según el stock y la cercanía al municipio del cliente.
 - **Importar el stock** pegando el texto de un cierre anterior y **fusionar** productos repetidos.
 - **Dinero** por almacén en dos cuentas, **caja** y **dueños**: entregas a dueños, gastos, ingresos y arqueos en cualquiera de las dos.
-- **Gestores**: saldo pendiente, deudas anteriores y ajustes, pagos (desde la caja, los dueños o sin descontar), llamada y WhatsApp.
+- **Gestores**: saldo pendiente, deudas anteriores y ajustes, pagos (desde la caja por defecto), llamada y WhatsApp.
 - **Liquidación semanal** (lunes–domingo): lo que se entrega a cada gestor y el % de comisión de cada asesor.
 - **Cierre general** con el formato del grupo: ventas por punto de venta, stock, dinero en caja y de los dueños, comisiones pendientes de todos los gestores (también de días anteriores), compras anticipadas e incidencias. Editable, se guarda y se comparte.
 

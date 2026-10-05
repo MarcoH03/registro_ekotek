@@ -137,7 +137,7 @@
   <ul>
     <li><b>Fecha de trabajo</b> (botón azul con el calendario): todo lo que registres usa esta fecha. Si el turno pasa de medianoche puedes seguir con la fecha del día anterior; la app muestra un aviso con el botón “Volver a hoy”.</li>
     <li><b>Accesos rápidos</b>: Nueva venta, ¿Dónde buscar?, Conteo, Incidencia, Traslado y Cierre.</li>
-    <li><b>Resumen del día</b>: total cobrado y cómo se reparte: lo que es de los <b>dueños</b> (azul), lo que queda para la <b>caja</b> (turquesa) y las comisiones de los <b>gestores</b>. Si hubo rebajas o combos también se indica.</li>
+    <li><b>Resumen del día</b>: total cobrado y cómo se reparte: lo que es de los <b>dueños</b> (azul) y lo que va a la <b>caja</b> (turquesa), que incluye las comisiones de los gestores. Si hubo rebajas o combos también se indica.</li>
     <li><b>Revisión de inventario</b>: indica si ya contaste cada almacén hoy (✓ con la hora) o si está pendiente.</li>
     <li><b>Dinero</b> de cada almacén: el saldo de la caja y el de los dueños. Tócalo para ver los movimientos o anotar entregas, gastos, ingresos y arqueos.</li>
     <li><b>Ventas del día</b>, y en <b>Seguimiento</b>: incidencias abiertas, compras anticipadas pendientes y la liquidación semanal.</li>
@@ -193,21 +193,21 @@
 <section>
   <h2><span class="n">6</span>Cómo se reparte el dinero de una venta</h2>
   <div class="split"><div class="txt">
-  <p>Todo lo que paga el cliente se reparte en tres partes: <b>dueños</b>, <b>caja</b> y <b>gestores</b>. Mientras escribes, el bloque <b>Reparto del dinero</b> se actualiza solo:</p>
+  <p>Todo lo que paga el cliente se reparte en dos partes: <b>dueños</b> y <b>caja</b>. Las comisiones de los gestores van a la caja y se les pagan desde ella. Mientras escribes, el bloque <b>Reparto del dinero</b> se actualiza solo:</p>
   <table>
     <tr><th>Concepto</th><th>Cómo se calcula</th></tr>
     <tr><td>Precio de la empresa</td><td>Cantidad × precio unitario de cada producto</td></tr>
     <tr><td>Cobrado al cliente</td><td>Lo que pagó el cliente</td></tr>
     <tr><td>Sobreprecio</td><td>Cobrado − precio de la empresa</td></tr>
-    <tr><td>Comisión de gestores</td><td>Suma de lo anotado para cada gestor</td></tr>
-    <tr><td><b>Para la caja</b></td><td>Sobreprecio − comisión de gestores (si sale negativo, 0)</td></tr>
-    <tr><td><b>Para los dueños</b></td><td>Cobrado − comisión de gestores − caja (normalmente, el precio de la empresa)</td></tr>
+    <tr><td>Comisión de gestores</td><td>Lo que se le debe a cada gestor; se paga desde la caja</td></tr>
+    <tr><td><b>Para la caja</b></td><td>Todo el sobreprecio (si la comisión es mayor, la comisión)</td></tr>
+    <tr><td><b>Para los dueños</b></td><td>Cobrado − caja (normalmente, el precio de la empresa)</td></tr>
   </table>
   <p><b>Ejemplo.</b> Una Oupes Mega 2 cuesta $820. El gestor Ernesto se la vendió al cliente por $860 y a él le tocan $25:</p>
-  <span class="formula">Sobreprecio = 860 − 820 = $40 · Caja = 40 − 25 = $15 · Dueños = 860 − 25 − 15 = $820</span>
-  <p>Los $25 se suman a la cuenta de Ernesto (se le pagan en la liquidación semanal), los $15 a la caja y los $820 a los dueños, en el almacén de la venta.</p>
+  <span class="formula">Sobreprecio = 860 − 820 = $40 → Caja = $40 · Dueños = 860 − 40 = $820</span>
+  <p>Los $40 entran en la caja y los $820 en la cuenta de los dueños del almacén de la venta. Además se anotan $25 en la cuenta de Ernesto: cuando se le pagan desde la caja, a la caja le quedan $15.</p>
   <div class="note"><b>Rebajas y combos</b>Si cobras menos que el precio de la empresa (por ejemplo, 4 paneles de $160 en combo por $600), escribe lo cobrado: la venta muestra “Rebaja / combo −$40”, la caja recibe 0 y la rebaja sale de la parte de los dueños ($600). También puedes cambiar el “Precio u.” de cada producto solo en esa venta.</div>
-  <div class="note"><b>Si la comisión supera el sobreprecio</b>La caja recibe 0 y la diferencia sale de la parte de los dueños. Si en algún caso el reparto es distinto, escribe a mano la cantidad “Para la caja”.</div>
+  <div class="note"><b>Si la comisión supera el sobreprecio</b>La caja recibe la comisión completa, para poder pagarla, y la diferencia sale de la parte de los dueños. Si en algún caso el reparto es distinto, escribe a mano la cantidad “Para la caja”.</div>
   <div class="tip"><b>Cambiar precios no altera el pasado</b>Cada venta guarda el precio con el que se hizo. Si cambias el precio de un producto en el catálogo, solo se usa en las ventas nuevas.</div>
   </div><figure><img src="../preview/05-nueva-venta-reparto.png"><figcaption>Bloque “Reparto del dinero” del formulario.</figcaption></figure></div>
 </section>
@@ -308,7 +308,7 @@
   <div class="split"><div class="txt">
   <p>Cada almacén lleva dos cuentas, que se abren desde <b>Hoy → Dinero</b>:</p>
   <ul>
-    <li><b>Caja</b>: los sobrantes del sobreprecio después de pagar a los gestores. Es lo que sale en el cierre como “DINERO EN CAJA”.</li>
+    <li><b>Caja</b>: el sobreprecio de las ventas, incluidas las comisiones de los gestores, menos lo que ya se les pagó. Es lo que sale en el cierre como “DINERO EN CAJA”. Debajo se indica cuánto se les debe todavía a los gestores.</li>
     <li><b>Dueños</b>: el dinero de los productos que todavía no se ha entregado a los dueños.</li>
   </ul>
   <span class="formula">Saldo = lo que aportan las ventas + ingresos − gastos − entregas − pagos que salieron de esa cuenta ± arqueos</span>
@@ -318,7 +318,7 @@
     <li><span class="k">Arqueo</span>: eliges la cuenta y escribes lo que hay. Si no coincide, se anota la diferencia y se ofrece crear una incidencia. Úsalo también para poner el saldo inicial.</li>
     <li>El filtro <b>Todo / Caja / Dueños</b> muestra los movimientos de cada cuenta; para borrar uno manual, tócalo.</li>
   </ul>
-  <p>Al pagar a un gestor o a un asesor puedes elegir si el dinero sale de la caja, de los dueños o de ninguna cuenta.</p>
+  <p>Los pagos a gestores salen de la caja (es la opción por defecto); también puedes elegir los dueños o no descontar. Igual con la comisión de los asesores.</p>
   </div><figure><img src="../preview/15-caja.png"><figcaption>Dinero de La Lisa: caja, dueños y movimientos.</figcaption></figure></div>
 </section>
 
@@ -345,7 +345,7 @@
   <p>La pestaña <b>Gestores</b> muestra cada gestor con lo que se le debe (en naranja) o “Al día”. Un gestor puede tener nombre, número o ambos (por ejemplo “55507788 Yanet Gil”).</p>
   <ul>
     <li>La cuenta de un gestor muestra <b>Ganado</b> (sus comisiones y deudas anteriores), <b>Pagado</b> y <b>Pendiente</b>, y el historial de cada comisión (con su vale), ajuste y pago.</li>
-    <li><span class="k">Registrar pago</span>: importe (propone lo pendiente), fecha y de dónde sale el dinero (no descontar, caja o dueños de un almacén).</li>
+    <li><span class="k">Registrar pago</span>: importe (propone lo pendiente), fecha y de dónde sale el dinero: por defecto, la caja del almacén que elijas.</li>
     <li><span class="k">Ajustar deuda</span>: para lo que ya se le debía antes de usar la app o para corregir. <b>Sumar</b> añade dinero a lo pendiente, <b>Restar</b> lo quita sin registrar un pago y <b>Fijar total</b> deja lo pendiente en la cantidad exacta que escribas. Se guarda con fecha y motivo, y se puede borrar tocándolo en el historial.</li>
     <li><span class="k">Llamar</span> y <span class="k">WhatsApp</span> abren directamente la llamada o el chat (a los números de 8 cifras se les añade el prefijo 53).</li>
     <li>Para borrar un pago hecho por error, tócalo en el historial.</li>

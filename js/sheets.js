@@ -121,13 +121,13 @@ export function saleEditor(existing = null, prefill = {}) {
       ${infoRow('Precio de la empresa', money(c.base))}
       ${infoRow('Cobrado al cliente', `<b>${money(c.total)}</b>`)}
       ${c.discount ? infoRow('Rebaja / combo', `<span class="orange">−${money(c.discount)}</span>`) : infoRow('Sobreprecio', money(c.extra))}
-      ${infoRow('Comisión de gestores', money(c.gest))}`;
+      ${c.gest ? infoRow('Comisión de gestores (se paga desde la caja)', money(c.gest)) : ''}`;
   };
   const splitNote = () => {
     const c = calc();
+    if (c.gest > Math.max(0, c.extra)) return `La comisión de gestores supera el sobreprecio: la caja recibe la comisión (${money(c.gest)}) para poder pagarla y la diferencia sale de la parte de los dueños.`;
     if (c.discount) return `Se cobró ${money(c.discount)} menos que el precio de la empresa (rebaja o combo): la diferencia la asumen los dueños.`;
-    if (c.gest > c.extra) return `La comisión de gestores supera el sobreprecio: la diferencia (${money(c.gest - Math.max(0, c.extra))}) sale de la parte de los dueños.`;
-    return 'Los dueños reciben el precio de la empresa y la caja se queda con el sobreprecio que sobra después de pagar a los gestores. Puedes escribir otra cantidad para la caja.';
+    return 'Los dueños reciben el precio de la empresa y la caja todo el sobreprecio. Las comisiones de los gestores se les pagan desde la caja. Puedes escribir otra cantidad para la caja.';
   };
 
   const render = () => {
@@ -396,7 +396,7 @@ export function saleDetail(id) {
           ${infoRow('Método de pago', { efectivo: 'Efectivo', transferencia: 'Transferencia', mixto: `Mixto (${money(c.cash)} en efectivo)` }[v.payMethod])}
           ${infoRow('Dinero anotado en', `${esc(wh(v.cashWh || v.wh)?.emoji || '')} ${esc(whName(v.cashWh || v.wh))}`)}`)}
         ${section('Reparto', `
-          ${v.gestores.map((g) => navRow('openGestor', esc(gestorName(g.gid)), { right: money(g.amount), attrs: `data-id="${g.gid}"`, sub: 'Gestor' })).join('')}
+          ${v.gestores.map((g) => navRow('openGestor', esc(gestorName(g.gid)), { right: money(g.amount), attrs: `data-id="${g.gid}"`, sub: 'Comisión del gestor (sale de la caja)' })).join('')}
           ${infoRow(`Para la caja${c.cajaManual ? ' (a mano)' : ''}`, money(c.caja))}
           ${infoRow('<b>Para los dueños</b>', `<b>${money(c.owners)}</b>`)}`)}
         ${v.client || v.phone || v.municipio || v.address ? section('Cliente', `
@@ -969,20 +969,21 @@ export function moneySheet(whId) {
     live: true,
     render: () => {
       const bal = moneyMap()[whId] || { caja: 0, duenos: 0 };
+      const gestPend = round2(state.gestores.reduce((a, g) => a + Math.max(0, gestorStats(g.id).balance), 0));
       const list = moneyEntries(whId, d.acc === 'todo' ? null : d.acc).slice(0, 100);
       return `
         <div class="money-hero">
-          <div class="mh caja"><span>Caja</span><b>${money(bal.caja)}</b><small>Sobrantes después de comisiones</small></div>
+          <div class="mh caja"><span>Caja</span><b>${money(bal.caja)}</b><small>Sobreprecio de las ventas</small></div>
           <div class="mh duenos"><span>Dueños</span><b>${money(bal.duenos)}</b><small>Pendiente de entregar</small></div>
         </div>
-        <div class="sec-f">${esc(wh(whId).emoji)} ${esc(whName(whId))} · total anotado ${money(bal.caja + bal.duenos)}</div>
+        <div class="sec-f">${esc(wh(whId).emoji)} ${esc(whName(whId))} · total anotado ${money(bal.caja + bal.duenos)}${gestPend > 0 ? `<br>Comisiones de gestores por pagar (todos los almacenes): ${money(gestPend)}. Se pagan desde la caja.` : ''}</div>
         <div class="action-grid">
           <button data-act="mv" data-type="entrega">${icon('outbox')}<span>Entrega a dueños</span></button>
           <button data-act="mv" data-type="gasto">${icon('wallet')}<span>Gasto</span></button>
           <button data-act="mv" data-type="ingreso">${icon('inbox')}<span>Ingreso</span></button>
           <button data-act="mv" data-type="ajuste">${icon('cash')}<span>Arqueo</span></button>
         </div>
-        <div class="sec-f">Cada venta reparte su dinero: el precio de la empresa a los dueños y el sobrante del sobreprecio a la caja. Los gastos e ingresos se anotan en la cuenta que elijas.</div>
+        <div class="sec-f">Cada venta reparte su dinero: el precio de la empresa a los dueños y el sobreprecio (con las comisiones de los gestores) a la caja. Los pagos a gestores salen de la caja. Los gastos e ingresos se anotan en la cuenta que elijas.</div>
         <div class="sec-h">Movimientos</div>
         <div class="pad">${seg('acc', [['todo', 'Todo'], ['caja', 'Caja'], ['duenos', 'Dueños']], d.acc)}</div>
         <div class="list" style="margin-top:12px">${list.length ? list.map((e) => `
@@ -1266,7 +1267,7 @@ export function gestorEditor(gid = null) {
 
 export function paymentEditor(gid, amount = null) {
   const bal = gestorStats(gid).balance;
-  const d = { amount: String(amount ?? (bal > 0 ? bal : '')), date: ctx.date, account: '', wh: state.warehouses[0].id, note: '' };
+  const d = { amount: String(amount ?? (bal > 0 ? bal : '')), date: ctx.date, account: 'caja', wh: state.warehouses[0].id, note: '' };
   openSheet({
     title: 'Pago a gestor',
     left: { label: 'Cancelar' },
@@ -1303,7 +1304,7 @@ export function paymentEditor(gid, amount = null) {
 function sourcePicker(d) {
   return `
     <div class="sec-h">¿De dónde sale el dinero?</div>
-    <div class="pad">${seg('account', [['', 'No descontar'], ['caja', 'Caja'], ['duenos', 'Dueños']], d.account)}</div>
+    <div class="pad">${seg('account', [['caja', 'Caja'], ['duenos', 'Dueños'], ['', 'No descontar']], d.account)}</div>
     ${d.account ? `<div class="pad" style="margin-top:8px">${whSeg('wh', d.wh)}</div>` : ''}
     <div class="sec-f">${d.account ? `El importe se resta del dinero ${d.account === 'caja' ? 'de la caja' : 'de los dueños'} de ${esc(whName(d.wh))}.` : 'El pago queda registrado sin tocar el dinero de la caja ni el de los dueños.'}</div>`;
 }
@@ -1367,11 +1368,10 @@ export function weekSheet(ws = null) {
           <div><b>${fmtDate(w.ws)} – ${fmtDate(w.we)}</b><span>Lunes a domingo · se paga el lunes ${fmtDate(addDays(w.we, 1))}</span></div>
           <button class="icon-btn" data-act="next">${icon('chevR')}</button>
         </div>
-        <div class="stats4" style="margin-top:8px">
+        <div class="stats3" style="margin-top:8px">
           <div><span>Cobrado</span><b>${money(w.total)}</b></div>
-          <div><span>Dueños</span><b>${money(w.owners)}</b></div>
-          <div><span>Caja</span><b>${money(w.caja)}</b></div>
-          <div><span>Gestores</span><b>${money(w.gest)}</b></div>
+          <div class="acc-duenos"><span>Dueños</span><b>${money(w.owners)}</b></div>
+          <div class="acc-caja"><span>Caja</span><b>${money(w.caja)}</b></div>
         </div>
         <div class="sec-f">${w.count} venta${w.count === 1 ? '' : 's'}${w.discount ? ` · rebajas y combos: ${money(w.discount)}` : ''}</div>
         ${section('Gestores · a entregar', w.gestores.length ? w.gestores.map((x) => navRow('pay', esc(x.g.name), {
@@ -1443,11 +1443,9 @@ async function pickSource(title, message) {
     title,
     message,
     actions: [
+      ...state.warehouses.map((x) => ({ label: `Caja ${x.name}`, value: `caja:${x.id}` })),
+      ...state.warehouses.map((x) => ({ label: `Dueños ${x.name}`, value: `duenos:${x.id}` })),
       { label: 'No descontar dinero', value: 'none' },
-      ...state.warehouses.flatMap((x) => [
-        { label: `Caja ${x.name}`, value: `caja:${x.id}` },
-        { label: `Dueños ${x.name}`, value: `duenos:${x.id}` },
-      ]),
     ],
   });
   if (!v) return null;
@@ -1687,7 +1685,7 @@ export function whatsNewSheet() {
     render: () => `
       <div class="welcome-hero" style="padding-top:8px"><h1 style="font-size:26px">Versión ${APP_VERSION}</h1><p>Tus datos anteriores se han conservado.</p></div>
       <div class="features">
-        <div>${icon('wallet')}<span><b>Dinero de los dueños y de la caja</b>Cada venta se reparte: el precio de la empresa es para los dueños y lo que sobra del sobreprecio tras pagar a los gestores, para la caja. Cada almacén tiene las dos cuentas y puedes anotar gastos, ingresos y arqueos en cualquiera.</span></div>
+        <div>${icon('wallet')}<span><b>Dinero de los dueños y de la caja</b>Cada venta se reparte: el precio de la empresa es para los dueños y el sobreprecio, con las comisiones de los gestores, va a la caja. Los gestores se pagan desde la caja. Cada almacén tiene las dos cuentas y puedes anotar gastos, ingresos y arqueos en cualquiera.</span></div>
         <div>${icon('tag')}<span><b>Rebajas y combos</b>Si cobras menos que el precio de la empresa, la venta muestra la rebaja y la asumen los dueños. Cambiar un precio del catálogo no modifica ventas pasadas.</span></div>
         <div>${icon('people')}<span><b>Deudas anteriores de gestores</b>En la ficha de cada gestor, “Ajustar deuda” permite sumar lo que ya se le debía o fijar el total.</span></div>
         <div>${icon('doc')}<span><b>Cierre</b>Las comisiones muestran a todos los gestores con dinero pendiente, también de días anteriores, y se añade el dinero de los dueños.</span></div>

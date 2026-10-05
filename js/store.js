@@ -223,18 +223,18 @@ export function hasIncident(whId, pid, upTo = null) {
 
 /* ---------- ventas ---------- */
 /**
- * Reparto de una venta: cobrado = dueños + caja + gestores.
- * Los dueños reciben el precio de la empresa. La caja se queda con lo que sobra del
- * sobreprecio después de pagar a los gestores (o con lo escrito a mano en `cajaManual`).
- * Si se cobró menos que el precio de la empresa (rebaja o combo), o la comisión supera
- * el sobreprecio, la diferencia sale de la parte de los dueños.
+ * Reparto de una venta: cobrado = dueños + caja.
+ * Los dueños reciben el precio de la empresa y la caja todo el sobreprecio, incluidas las
+ * comisiones de los gestores, que luego se les pagan desde la caja. Si la comisión supera
+ * el sobreprecio, la caja recibe al menos la comisión y la diferencia sale de los dueños;
+ * en una rebaja o combo (cobrado < precio) la asumen los dueños. `cajaManual` fija otra cantidad.
  * Cada venta guarda sus propios precios: cambiar el catálogo no altera ventas pasadas.
  */
 export function saleCalc(s) {
   const base = round2(sum(s.items || [], (it) => num(it.qty) * num(it.price)));
   const total = round2(num(s.total));
   const gest = round2(sum(s.gestores || [], (g) => g.amount));
-  const cajaAuto = round2(Math.max(0, total - base - gest));
+  const cajaAuto = round2(Math.max(0, total - base, gest));
   const manual = s.cajaManual !== undefined && s.cajaManual !== null && s.cajaManual !== '';
   const caja = manual ? round2(num(s.cajaManual)) : cajaAuto;
   const cash = s.payMethod === 'efectivo' ? total : s.payMethod === 'mixto' ? Math.min(num(s.cashAmount), total) : 0;
@@ -246,7 +246,7 @@ export function saleCalc(s) {
     caja,
     cajaAuto,
     cajaManual: manual,
-    owners: round2(total - gest - caja),
+    owners: round2(total - caja),
     discount: round2(Math.max(0, base - total)),
     cash: round2(cash),
   };

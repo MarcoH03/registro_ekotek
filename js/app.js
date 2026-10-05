@@ -56,12 +56,11 @@ function saleRow(s) {
     </button>`;
 }
 
-/** Fila con el reparto de un grupo de ventas: dueños, caja, gestores (y rebajas). */
+/** Fila con el reparto de un grupo de ventas: dueños y caja (y rebajas). */
 function splitBar(t) {
   return `<div class="row split-bar">
     <span class="acc-duenos"><small>Dueños</small><b>${money(t.owners)}</b></span>
     <span class="acc-caja"><small>Caja</small><b>${money(t.caja)}</b></span>
-    <span><small>Gestores</small><b>${money(t.gest)}</b></span>
     ${t.discount ? `<span><small>Rebajas</small><b class="orange">${money(t.discount)}</b></span>` : ''}
   </div>`;
 }
@@ -95,11 +94,10 @@ function viewHoy() {
       ${tile('doc', 'Cierre', 'purple', 'goCierre')}
     </div>
     <div class="sec-h">Resumen del día <span class="sec-r">${t.count} venta${t.count === 1 ? '' : 's'}</span></div>
-    <div class="stats4">
+    <div class="stats3">
       <div><span>Cobrado</span><b>${money(t.total)}</b></div>
       <div class="acc-duenos"><span>Dueños</span><b>${money(t.owners)}</b></div>
       <div class="acc-caja"><span>Caja</span><b>${money(t.caja)}</b></div>
-      <div><span>Gestores</span><b>${money(t.gest)}</b></div>
     </div>
     ${t.discount ? `<div class="sec-f">Incluye ${money(t.discount)} de rebajas y combos.</div>` : ''}
     ${section('Revisión de inventario', state.warehouses.map((x) => {

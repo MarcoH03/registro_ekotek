@@ -102,7 +102,7 @@ export function buildWeekly(ws) {
   const out = [];
   out.push('💳 *LIQUIDACIÓN SEMANAL*', '', `📅 Semana del ${fmtDate(w.ws)} al ${fmtDate(w.we)}`, '');
   out.push(`🧑‍🧒 Asesor: ${state.settings.asesor || ''}`, '', SEP, '');
-  out.push(`💰 Ventas de la semana: ${w.count}`, `Total cobrado: ${money(w.total)}`, `Para los dueños: ${money(w.owners)}`, `Para la caja: ${money(w.caja)}`, `Comisiones de gestores: ${money(w.gest)}`);
+  out.push(`💰 Ventas de la semana: ${w.count}`, `Total cobrado: ${money(w.total)}`, `Para los dueños: ${money(w.owners)}`, `Para la caja: ${money(w.caja)}`);
   if (w.discount) out.push(`Rebajas y combos: ${money(w.discount)}`);
   out.push('', SEP, '');
   out.push('👥 GESTORES (a entregar el lunes)');
