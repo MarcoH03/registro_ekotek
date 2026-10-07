@@ -22,10 +22,11 @@ self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(ASSETS)));
 });
 
+// Solo borra cachés antiguas de esta app: otras apps de marcoh03.github.io comparten el mismo origen.
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('ekotek-') && k !== VERSION).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
